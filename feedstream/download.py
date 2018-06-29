@@ -22,6 +22,7 @@ def download_entries():
         'author',
         'summary',
         'keywords']
+
     rows = []
     tag_ids = fetch.fetch_tag_ids()
 
