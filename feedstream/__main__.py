@@ -9,7 +9,7 @@ import feedstream.download as download
 def main():
 
     print("Getting data from Feedly ...")
-    download.download_entries()
+    download.write_entries_csv(download.download_entries())
 
 # Main ------------------------------------------------------------------------
 main()

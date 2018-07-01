@@ -14,7 +14,7 @@ import feedstream.settings as settings
 TIMESTAMP_FILE = os.path.join(settings.data_dir, settings.timestamp_file)
 # 1530313200000
 
-# Functions -------------------------------------------------------------------
+# Download functions ----------------------------------------------------------
 
 def download_entries():
 
@@ -22,9 +22,10 @@ def download_entries():
 
     fieldnames = [
         'board',
-        'pub_date',
+        'add_timestamp',
         'add_date',
         'add_time',
+        'pub_date',
         'publisher',
         'url',
         'title',
@@ -56,15 +57,16 @@ def download_entries():
                 entry['author'] = data.get_opt_key(item, 'author')
                 entry['publisher'] = data.get_opt_key(item, 'origin', 'title')
 
-                pub_date = data.get_opt_key(item, 'published')
-                if pub_date is not None:
-                    entry['pub_date'] = data.get_date_from_timestamp(pub_date)
-
                 add_date = data.get_opt_key(item, 'actionTimestamp')
                 if add_date is not None:
+                    entry['add_timestamp'] = item['actionTimestamp']
                     entry['add_date'] = data.get_date_from_timestamp(add_date)
                     entry['add_time'] = data.get_time_from_timestamp(
                         add_date).strftime('%H:%M:%S')
+
+                pub_date = data.get_opt_key(item, 'published')
+                if pub_date is not None:
+                    entry['pub_date'] = data.get_date_from_timestamp(pub_date)
 
                 summary = data.get_opt_key(item, 'summary', 'content')
                 if summary is not None:
@@ -86,6 +88,8 @@ def download_entries():
         'entries': entries}
 
     return entries
+
+# Save data functions ---------------------------------------------------------
 
 def write_entries_csv(entries):
 
@@ -114,6 +118,8 @@ def write_entries_csv(entries):
 
     except:
         raise
+
+# Timestamp functions ---------------------------------------------------------
 
 def get_last_downloaded():
 
