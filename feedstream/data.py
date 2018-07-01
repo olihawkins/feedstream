@@ -4,39 +4,50 @@
 
 import datetime
 import re
+import feedstream.settings as settings
+
+# Constants -------------------------------------------------------------------
 
 TAG_RE = re.compile('<.*?>')
 SPACES_RE = re.compile(' +')
 
 # Functions -------------------------------------------------------------------
 
-def get_timestamp_dt(timestamp):
+def get_datetime_from_timestamp(ts_ms):
 
-    """Get Feedly timestamp as datetime.datetime."""
+    """Get Feedly timestamp as a datetime.datetime."""
 
-    secs = timestamp / 1000
-    return datetime.datetime.fromtimestamp(secs)
+    ts_secs = int(ts_ms / 1000)
+    return datetime.datetime.fromtimestamp(ts_secs)
 
-def get_timestamp_iso(timestamp):
+def get_date_from_timestamp(ts_ms):
 
-    """Get Feedly timestamp as ISO format string."""
+    """Get Feedly timestamp as a date."""
 
-    secs = timestamp / 1000
-    return datetime.datetime.fromtimestamp(secs).isoformat()
+    ts_secs = ts_ms / 1000
+    return datetime.datetime.fromtimestamp(ts_secs).date()
 
-def get_timestamp_date(timestamp):
+def get_time_from_timestamp(ts_ms):
 
-    """Get Feedly timestamp as ISO format string."""
+    """Get Feedly timestamp as a time."""
 
-    secs = timestamp / 1000
-    return datetime.datetime.fromtimestamp(secs).date()
+    ts_secs = ts_ms / 1000
+    return datetime.datetime.fromtimestamp(ts_secs).time()
 
-def get_timestamp_time(timestamp):
+def get_iso_from_timestamp(ts_ms):
 
-    """Get Feedly timestamp as ISO format string."""
+    """Get Feedly timestamp as an ISO format string."""
 
-    secs = timestamp / 1000
-    return datetime.datetime.fromtimestamp(secs).time().strftime('%H:%M:%S')
+    ts_secs = ts_ms / 1000
+    return datetime.datetime.fromtimestamp(ts_secs).isoformat()
+
+def get_timestamp_from_datetime(dt):
+
+    """Get Feedly timestamp from a Python datetime."""
+
+    ts_secs = dt.timestamp()
+    ts_ms = int(ts_secs * 1000)
+    return ts_ms
 
 def remove_tags(text):
 
@@ -51,7 +62,7 @@ def remove_tags(text):
 
 def key_exists(data_dict, *keys):
 
-    """Test if a sequence of nested keys exists in a dictionary."""
+    """Test if a sequence of keys exists in a nested dictionary."""
 
     element = data_dict
 
@@ -62,11 +73,11 @@ def key_exists(data_dict, *keys):
             return False
     return True
 
-def get_optional_key(data_dict, *keys):
+def get_opt_key(data_dict, *keys):
 
     """
-    Get data for a sequence of keys in a dictionary or return None if the
-    sequence of keys does not exist.
+    Get the data for a given sequence of keys which may or may not exist in a
+    nested dictionary. Returns None if the sequence of keys does not exist.
     """
 
     element = data_dict

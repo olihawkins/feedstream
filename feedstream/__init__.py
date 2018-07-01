@@ -7,7 +7,7 @@ a feedly account.
 
 from . import fetch
 from .fetch import *
-from . import clean
-from .clean import *
+from . import data
+from .data import *
 from . import download
 from .download import *
