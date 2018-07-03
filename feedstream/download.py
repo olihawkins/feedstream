@@ -12,7 +12,6 @@ import feedstream.settings as settings
 # Constants -------------------------------------------------------------------
 
 TIMESTAMP_FILE = os.path.join(settings.data_dir, settings.timestamp_file)
-# 1530313200000
 
 # Download functions ----------------------------------------------------------
 
@@ -45,7 +44,7 @@ def download_entries():
         while True:
 
             contents = fetch.fetch_tag_contents(tag_id['id'],
-                since=since, continuation=continuation, count=10000)
+                since=since, continuation=continuation)
 
             for item in contents['items']:
 
@@ -115,6 +114,7 @@ def write_entries_csv(entries):
                 writer.writerow(entry)
 
         set_last_downloaded(downloaded)
+        return filename
 
     except:
         raise

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Imports --------------------------------------------------------------------
+# Imports ---------------------------------------------------------------------
 
 import datetime
 import pytz
@@ -28,7 +28,7 @@ seconds = [0, 0, 0, 0]
 
 # Tests -----------------------------------------------------------------------
 
-class test_get_datetime_from_timestamp(unittest.TestCase):
+class TestGetDatetimeFromTimestamp(unittest.TestCase):
 
     """Test that get_datetime_from_timestamp returns the expected datetime."""
 
@@ -44,7 +44,7 @@ class test_get_datetime_from_timestamp(unittest.TestCase):
             self.assertEqual(dt.second, seconds[i])
 
 
-class test_get_datetime_from_timestamp_eastern(unittest.TestCase):
+class TestGetDatetimeFromTimestampEastern(unittest.TestCase):
 
     """
     Test that get_datetime_from_timestamp returns the expected datetime with a
@@ -64,7 +64,7 @@ class test_get_datetime_from_timestamp_eastern(unittest.TestCase):
             self.assertEqual(dt.second, seconds[i])
 
 
-class test_get_date_from_timestamp(unittest.TestCase):
+class TestGetDateFromTimestamp(unittest.TestCase):
 
     """Test that get_date_from_timestamp returns the expected date."""
 
@@ -77,7 +77,7 @@ class test_get_date_from_timestamp(unittest.TestCase):
             self.assertEqual(d.day, days[i])
 
 
-class test_get_time_from_timestamp(unittest.TestCase):
+class TestGetTimeFromTimestamp(unittest.TestCase):
 
     """Test that get_time_from_timestamp returns the expected time."""
 
@@ -90,7 +90,7 @@ class test_get_time_from_timestamp(unittest.TestCase):
             self.assertEqual(t.second, seconds[i])
 
 
-class test_get_time_from_timestamp_eastern(unittest.TestCase):
+class TestGetTimeFromTimestampEastern(unittest.TestCase):
 
     """
     Test that get_time_from_timestamp returns the expected time with a
@@ -107,7 +107,7 @@ class test_get_time_from_timestamp_eastern(unittest.TestCase):
             self.assertEqual(t.second, seconds[i])
 
 
-class test_get_iso_from_timestamp(unittest.TestCase):
+class TestGetIsoFromTimestamp(unittest.TestCase):
 
     """Test that get_iso_from_timestamp returns the expected iso."""
 
@@ -118,7 +118,7 @@ class test_get_iso_from_timestamp(unittest.TestCase):
             self.assertEqual(iso, isos[i])
 
 
-class test_get_iso_from_timestamp_eastern(unittest.TestCase):
+class TestGetIsoFromTimestampEastern(unittest.TestCase):
 
     """
     Test that get_iso_from_timestamp returns the expected iso with a
@@ -133,7 +133,7 @@ class test_get_iso_from_timestamp_eastern(unittest.TestCase):
             self.assertEqual(iso, isos_eastern[i])
 
 
-class test_get_timestamp_from_datetime(unittest.TestCase):
+class TestGetTimestampFromDatetime(unittest.TestCase):
 
     """
     Test that get_timestamp_from_datetime returns the expected timestamp.
