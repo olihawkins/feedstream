@@ -5,6 +5,7 @@
 import datetime
 import json
 import unittest
+import feedstream.data as data
 import feedstream.download as download
 from unittest.mock import patch
 
@@ -54,11 +55,11 @@ def mock_requests_get(*args, **kwargs):
 
     if args[0] == contents_url_id_b:
         return MockResponse(200, {'id': 'id_b', 'items': [
-            {'id': 'item_b1'}, {'id': 'item_b2'}], 'continuation': '1'})
+            mock_entry, mock_entry], 'continuation': '1'})
 
     if args[0] == contents_url_id_b_con:
         return MockResponse(200, {'id': 'id_b', 'items': [
-            {'id': 'item_b3'}, {'id': 'item_b4'}]})
+            mock_entry, mock_entry]})
 
     return MockResponse(404, {'errorCode': 404,
         'errorId': 'ap3int-sv2.2018070302.2773846',
@@ -71,6 +72,7 @@ class TestDownloadEntries(unittest.TestCase):
     @patch('feedstream.fetch.requests.get', side_effect=mock_requests_get)
     @patch('feedstream.fetch.settings.access_token', 'access token')
     @patch('feedstream.fetch.settings.download_new', False)
+    @patch('feedstream.data.settings.timezone', 'Europe/London')
     def test_download_entries(self, mock_get):
 
         """
@@ -92,10 +94,7 @@ class TestDownloadEntries(unittest.TestCase):
             int(entries['downloaded'] / 1000)), datetime.datetime)
 
         # Check fieldnames are as expected
-        fieldnames = ['board', 'add_timestamp', 'add_date', 'add_time',
-            'pub_date', 'publisher', 'url', 'title', 'author', 'summary',
-            'keywords', 'article_id']
-
+        fieldnames = data.FIELDNAMES
         self.assertEqual(entries['fieldnames'], fieldnames)
 
         # Check the number of entries are as expected
@@ -106,28 +105,23 @@ class TestDownloadEntries(unittest.TestCase):
         test_entry = entries['entries'][0]
 
         self.assertEqual(sorted(list(test_entry.keys())), sorted(fieldnames))
-        self.assertEqual(test_entry['board'], 'lab_a')
+        self.assertEqual(test_entry['tag_id'], 'id_a')
+        self.assertEqual(test_entry['tag_label'], 'lab_a')
         self.assertEqual(test_entry['article_id'], mock_entry['id'])
         self.assertEqual(test_entry['url'], mock_entry['canonicalUrl'])
         self.assertEqual(test_entry['title'], mock_entry['title'])
         self.assertEqual(test_entry['author'], mock_entry['author'])
         self.assertEqual(test_entry['summary'], 'Lorem ipsum. Doler sit ...')
+
         self.assertEqual(test_entry['publisher'],
             mock_entry['origin']['title'])
+
         self.assertEqual(test_entry['add_timestamp'],
             mock_entry['actionTimestamp'])
+
         self.assertEqual(test_entry['keywords'],
             ' : '.join(mock_entry['keywords']))
 
-        self.assertEqual(test_entry['add_date'],
-            datetime.datetime.fromtimestamp(
-                int(mock_entry['actionTimestamp'] / 1000)).date())
-
-        self.assertEqual(test_entry['add_time'],
-            datetime.datetime.fromtimestamp(
-                int(mock_entry['actionTimestamp'] / 1000)).time().strftime(
-                    '%H:%M:%S'))
-
-        self.assertEqual(test_entry['pub_date'],
-            datetime.datetime.fromtimestamp(
-                int(mock_entry['published'] / 1000)).date())
+        self.assertEqual(test_entry['pub_date'], datetime.date(2018, 7, 3))
+        self.assertEqual(test_entry['add_date'], datetime.date(2018, 7, 3))
+        self.assertEqual(test_entry['add_time'], '16:19:09')

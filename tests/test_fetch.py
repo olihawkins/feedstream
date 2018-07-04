@@ -2,6 +2,7 @@
 
 # Imports ---------------------------------------------------------------------
 
+import json
 import unittest
 import feedstream.fetch as fetch
 from unittest.mock import patch
@@ -229,9 +230,9 @@ class TestFetchTagContents(unittest.TestCase):
         """
 
         mock_get.return_value.ok = False
-        mock_get.return_value.text = '{0}{1}'.format(
-            '{"errorCode":404,"errorId":"ap3int-sv2.2018070302.2773846",',
-            '"errorMessage":"API handler not found"}')
+        mock_get.return_value.text = json.dumps({
+            'errorCode': 404, 'errorId': 'ap3int-sv2.2018070302.2773846',
+            'errorMessage': 'API handler not found'})
 
         with self.assertRaises(fetch.ApiError):
             response = fetch.fetch_tag_contents('tag_id')

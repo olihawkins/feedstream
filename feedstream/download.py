@@ -19,20 +19,6 @@ def download_entries():
 
     """Download entries from each tag to a csv."""
 
-    fieldnames = [
-        'board',
-        'add_timestamp',
-        'add_date',
-        'add_time',
-        'pub_date',
-        'publisher',
-        'url',
-        'title',
-        'author',
-        'summary',
-        'keywords',
-        'article_id']
-
     entries = []
     since = get_last_downloaded() if settings.download_new else None
     downloaded = data.get_timestamp_from_datetime(datetime.datetime.now())
@@ -41,6 +27,7 @@ def download_entries():
     for tag_id in tag_ids:
 
         continuation = None
+
         while True:
 
             contents = fetch.fetch_tag_contents(tag_id['id'],
@@ -48,33 +35,7 @@ def download_entries():
 
             for item in contents['items']:
 
-                entry = {}
-                entry['board'] = tag_id['label']
-                entry['article_id'] = item['id']
-                entry['url'] = data.get_entry_url(item)
-                entry['title'] = data.get_opt_key(item, 'title')
-                entry['author'] = data.get_opt_key(item, 'author')
-                entry['publisher'] = data.get_opt_key(item, 'origin', 'title')
-
-                add_date = data.get_opt_key(item, 'actionTimestamp')
-                if add_date is not None:
-                    entry['add_timestamp'] = item['actionTimestamp']
-                    entry['add_date'] = data.get_date_from_timestamp(add_date)
-                    entry['add_time'] = data.get_time_from_timestamp(
-                        add_date).strftime('%H:%M:%S')
-
-                pub_date = data.get_opt_key(item, 'published')
-                if pub_date is not None:
-                    entry['pub_date'] = data.get_date_from_timestamp(pub_date)
-
-                summary = data.get_opt_key(item, 'summary', 'content')
-                if summary is not None:
-                    entry['summary'] = data.remove_tags(summary)
-
-                keywords = data.get_opt_key(item, 'keywords')
-                if keywords is not None:
-                    entry['keywords'] = ' : '.join(keywords)
-
+                entry = data.parse_entry(tag_id['id'], tag_id['label'], item)
                 entries.append(entry)
 
             continuation = data.get_opt_key(contents, 'continuation')
@@ -83,7 +44,7 @@ def download_entries():
 
     entries = {
         'downloaded': downloaded,
-        'fieldnames': fieldnames,
+        'fieldnames': data.FIELDNAMES,
         'entries': entries}
 
     return entries
