@@ -8,7 +8,7 @@ Simply set the API token and timezone in settings.py and download data on all ar
 
 - `downloaded` contains a Feedly timestamp of the last time data was downloaded
 - `fieldnames` is a list of fieldnames used as keys for each entry in the list
-- `entries` is a list of all entries on boards, along with the name id and name of their board
+- `entries` is a list of all entries on boards, along with the id and name of their board
 
 You can set the library to only download articles that have been added to boards since the last time data was downloaded by setting `download_new` to `True` in settings.py. The downloaded entries can be written to a csv with `write_entries(entries)`, or converted directly to a pandas dataframe with `pandas.DataFrame(entries['entries'])`.
 
