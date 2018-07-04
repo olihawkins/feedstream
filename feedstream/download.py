@@ -5,6 +5,7 @@
 import csv
 import datetime
 import os
+import pathlib
 import feedstream.fetch as fetch
 import feedstream.data as data
 import feedstream.settings as settings
@@ -61,6 +62,8 @@ def write_entries_csv(entries):
 
     try:
 
+        pathlib.Path(settings.data_dir).mkdir(exist_ok=True)
+
         filename = '{0}-{1}-{2}.csv'.format(
             settings.download_title,
             data.get_date_from_timestamp(downloaded),
@@ -96,6 +99,8 @@ def get_last_downloaded():
 def set_last_downloaded(timestamp):
 
     """Set the timestamp for the last time data was downloaded."""
+
+    pathlib.Path(settings.data_dir).mkdir(exist_ok=True)
 
     with open(TIMESTAMP_FILE, 'w') as f:
         f.write('{0}'.format(timestamp))
