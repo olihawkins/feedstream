@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 """feedstream: A package for downloading data from Feedly
 
 The feedstrem package provides tools for downloading and processing data from

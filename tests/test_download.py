@@ -4,27 +4,15 @@
 
 import datetime
 import json
+import os
 import unittest
 import feedstream.data as data
 import feedstream.download as download
-from unittest.mock import patch
+
+from unittest.mock import patch, call
+from tests.test_data import get_mock_entry
 
 # Mocks -----------------------------------------------------------------------
-
-def get_mock_entry():
-
-    mock_entry = {
-        'id': 'entry_id',
-        'canonicalUrl': 'http://domain.com/entry',
-        'title': 'Title',
-        'author': 'Author',
-        'origin': {'title': 'Publisher'},
-        'actionTimestamp': 1530631149285,
-        'published': 1530631149285,
-        'summary': {'content': '<p>Lorem ipsum.</p> <p>Doler <b>sit</b> ...'},
-        'keywords': ['some', 'keywords']}
-
-    return mock_entry
 
 def mock_requests_get(*args, **kwargs):
 
@@ -38,32 +26,43 @@ def mock_requests_get(*args, **kwargs):
 
     mock_entry = get_mock_entry()
 
-    tag_url = 'http://cloud.feedly.com/v3/tags'
-    contents_url = 'http://cloud.feedly.com/v3/streams/contents?streamId='
+    tag_url = 'https://cloud.feedly.com/v3/tags'
+    contents_url = 'https://cloud.feedly.com/v3/streams/contents?streamId='
+
     contents_url_id_a = '{0}{1}'.format(contents_url, 'id_a')
     contents_url_id_b = '{0}{1}'.format(contents_url, 'id_b')
     contents_url_id_b_con = '{0}{1}{2}'.format(contents_url, 'id_b',
         '&continuation=1')
+
+    contents_url_id_a_nt = '{0}{1}{2}'.format(contents_url, 'id_a',
+        '&newerThan=100')
+    contents_url_id_b_nt = '{0}{1}{2}'.format(contents_url, 'id_b',
+        '&newerThan=100')
+    contents_url_id_b_con_nt = '{0}{1}{2}'.format(contents_url, 'id_b',
+        '&newerThan=100&continuation=1')
 
     if args[0] == tag_url:
         return MockResponse(200, [
             {'id': 'id_a', 'label': 'lab_a'},
             {'id': 'id_b', 'label': 'lab_b'}])
 
-    if args[0] == contents_url_id_a:
+    if args[0] == contents_url_id_a or args[0] == contents_url_id_a_nt:
         return MockResponse(200, {'id': 'id_a', 'items': [mock_entry]})
 
-    if args[0] == contents_url_id_b:
+    if args[0] == contents_url_id_b or args[0] == contents_url_id_b_nt:
         return MockResponse(200, {'id': 'id_b', 'items': [
             mock_entry, mock_entry], 'continuation': '1'})
 
-    if args[0] == contents_url_id_b_con:
+    if args[0] == contents_url_id_b_con or args[0] == contents_url_id_b_con_nt:
         return MockResponse(200, {'id': 'id_b', 'items': [
             mock_entry, mock_entry]})
 
     return MockResponse(404, {'errorCode': 404,
         'errorId': 'ap3int-sv2.2018070302.2773846',
         'errorMessage': 'API handler not found'})
+
+def mock_get_last_downloaded():
+    return 100
 
 # Tests -----------------------------------------------------------------------
 
@@ -81,7 +80,7 @@ class TestDownloadEntries(unittest.TestCase):
         download_entries first downloads a set of tag_ids, and then downloads
         the entries for each tag in turn, handling continuation ids in the
         returned data, and returns the expected json. It does not test whether
-        the function correctly download all entries or just the new entries
+        the function correctly downloads all entries or just the new entries
         depending on the setttings: this is tested separately below.
 
         """
@@ -100,28 +99,89 @@ class TestDownloadEntries(unittest.TestCase):
         # Check the number of entries are as expected
         self.assertEqual(len(entries['entries']), 5)
 
-        # Check the mock entry was processed correctly
-        mock_entry = get_mock_entry()
-        test_entry = entries['entries'][0]
+        # Check the json for each entry has the expected structre
+        for test_entry in entries['entries']:
+            self.assertEqual(
+                sorted(list(test_entry.keys())),
+                sorted(data.FIELDNAMES))
 
-        self.assertEqual(sorted(list(test_entry.keys())), sorted(fieldnames))
-        self.assertEqual(test_entry['tag_id'], 'id_a')
-        self.assertEqual(test_entry['tag_label'], 'lab_a')
-        self.assertEqual(test_entry['article_id'], mock_entry['id'])
-        self.assertEqual(test_entry['url'], mock_entry['canonicalUrl'])
-        self.assertEqual(test_entry['title'], mock_entry['title'])
-        self.assertEqual(test_entry['author'], mock_entry['author'])
-        self.assertEqual(test_entry['summary'], 'Lorem ipsum. Doler sit ...')
+    @patch('feedstream.fetch.requests.get', side_effect=mock_requests_get)
+    @patch('feedstream.fetch.settings.access_token', 'access token')
+    @patch('feedstream.fetch.settings.download_new', False)
+    @patch('feedstream.data.settings.timezone', 'Europe/London')
+    def test_download_entries_all(self, mock_get):
 
-        self.assertEqual(test_entry['publisher'],
-            mock_entry['origin']['title'])
+        """
+        Test that download_entries downloads all entries if the download_new
+        setting is False.
 
-        self.assertEqual(test_entry['add_timestamp'],
-            mock_entry['actionTimestamp'])
+        """
 
-        self.assertEqual(test_entry['keywords'],
-            ' : '.join(mock_entry['keywords']))
+        entries = download.download_entries()
+        headers = {'Authorization': 'OAuth {0}'.format('access token')}
+        calls = [
+            call('https://cloud.feedly.com/v3/tags', headers=headers),
+            call('{0}{1}'.format('https://cloud.feedly.com/v3/streams/contents',
+                '?streamId=id_a'), headers={'Authorization':
+                'OAuth access token'}),
+            call('{0}{1}'.format('https://cloud.feedly.com/v3/streams/contents',
+                '?streamId=id_b'), headers={'Authorization':
+                'OAuth access token'}),
+            call('{0}{1}'.format('https://cloud.feedly.com/v3/streams/contents',
+                '?streamId=id_b&continuation=1'), headers={'Authorization':
+                'OAuth access token'})]
 
-        self.assertEqual(test_entry['pub_date'], datetime.date(2018, 7, 3))
-        self.assertEqual(test_entry['add_date'], datetime.date(2018, 7, 3))
-        self.assertEqual(test_entry['add_time'], '16:19:09')
+        mock_get.assert_has_calls(calls)
+
+    @patch('feedstream.fetch.requests.get', side_effect=mock_requests_get)
+    @patch('feedstream.fetch.settings.access_token', 'access token')
+    @patch('feedstream.fetch.settings.download_new', True)
+    @patch('feedstream.data.settings.timezone', 'Europe/London')
+    @patch('feedstream.download.get_last_downloaded', mock_get_last_downloaded)
+    def test_download_entries_new(self, mock_get):
+
+        """
+        Test that download_entries downloads just new entries if the
+        download_new setting is True.
+
+        """
+
+        entries = download.download_entries()
+        headers = {'Authorization': 'OAuth {0}'.format('access token')}
+        calls = [
+            call('https://cloud.feedly.com/v3/tags', headers=headers),
+            call('{0}{1}'.format('https://cloud.feedly.com/v3/streams/contents',
+                '?streamId=id_a&newerThan=100'), headers={'Authorization':
+                'OAuth access token'}),
+            call('{0}{1}'.format('https://cloud.feedly.com/v3/streams/contents',
+                '?streamId=id_b&newerThan=100'), headers={'Authorization':
+                'OAuth access token'}),
+            call('{0}{1}'.format('https://cloud.feedly.com/v3/streams/contents',
+                '?streamId=id_b&newerThan=100&continuation=1'),
+                headers={'Authorization': 'OAuth access token'})]
+
+        mock_get.assert_has_calls(calls)
+
+class TestTimestampFunctions(unittest.TestCase):
+
+    """
+    Tests that timestamps are correctly written to and read from the
+    timestamp file.
+
+    """
+
+    def setUp(self):
+        
+        self.timestamp = 1000
+        self.timestamp_file = 'timestamp.txt'
+        open(self.timestamp_file, 'a').close()
+
+    @patch('feedstream.download.TIMESTAMP_FILE', 'timestamp.txt')
+    def test_get_and_set_last_downloaded(self):
+
+        download.set_last_downloaded(self.timestamp)
+        timestamp = download.get_last_downloaded()
+        self.assertEqual(timestamp, self.timestamp)
+
+    def tearDown(self):
+        os.remove(self.timestamp_file)

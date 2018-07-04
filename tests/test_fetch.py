@@ -21,7 +21,7 @@ class TestFetchTagIds(unittest.TestCase):
 
         """
 
-        url = 'http://cloud.feedly.com/v3/tags'
+        url = 'https://cloud.feedly.com/v3/tags'
         headers = {'Authorization': 'OAuth {0}'.format('access token')}
 
         mock_get.return_value.ok = True
@@ -61,7 +61,7 @@ class TestFetchTagEntryIds(unittest.TestCase):
 
         """
 
-        base_url = 'http://cloud.feedly.com/v3/streams/ids?streamId='
+        base_url = 'https://cloud.feedly.com/v3/streams/ids?streamId='
         tag_id = 'tag_id'
 
         url_tag = '{0}{1}'.format(base_url, tag_id)
@@ -136,7 +136,7 @@ class TestFetchEntry(unittest.TestCase):
 
         """
 
-        url = 'http://cloud.feedly.com/v3/entries/entry_id'
+        url = 'https://cloud.feedly.com/v3/entries/entry_id'
         headers = {'Authorization': 'OAuth {0}'.format('access token')}
 
         mock_get.return_value.ok = True
@@ -175,7 +175,7 @@ class TestFetchTagContents(unittest.TestCase):
 
         """
 
-        base_url = 'http://cloud.feedly.com/v3/streams/contents?streamId='
+        base_url = 'https://cloud.feedly.com/v3/streams/contents?streamId='
         tag_id = 'tag_id'
 
         url_tag = '{0}{1}'.format(base_url, tag_id)

@@ -26,6 +26,25 @@ hours = [22, 8, 17, 21]
 minutes = [1, 1, 1, 1]
 seconds = [0, 0, 0, 0]
 
+# Mocks -----------------------------------------------------------------------
+
+def get_mock_entry():
+
+    mock_entry = {
+        'id': 'entry_id',
+        'canonicalUrl': 'http://domain.com/entry',
+        'canonical': [{'href': 'http://canonical.com', 'type': 'text/html'}],
+        'alternate': [{'href': 'http://alternate.com', 'type': 'text/html'}],
+        'title': 'Title',
+        'author': 'Author',
+        'origin': {'title': 'Publisher'},
+        'actionTimestamp': 1530631149285,
+        'published': 1530631149285,
+        'summary': {'content': '<p>Lorem ipsum.</p> <p>Doler <b>sit</b> ...'},
+        'keywords': ['some', 'keywords']}
+
+    return mock_entry
+
 # Tests -----------------------------------------------------------------------
 
 class TestGetDatetimeFromTimestamp(unittest.TestCase):
@@ -146,3 +165,119 @@ class TestGetTimestampFromDatetime(unittest.TestCase):
             dt = data.get_datetime_from_timestamp(timestamps[i], london)
             ts = data.get_timestamp_from_datetime(dt)
             self.assertEqual(ts, timestamps[i])
+
+
+class TestRemoveTags(unittest.TestCase):
+
+    """Test that remove_tags romves tags from summary text."""
+
+    def test_remove_tags(self):
+
+        input = """
+        <article>
+        <h1>Title</h1>
+        <p style="color: #ff0000;">
+        An example styled paragraph with <b>bold</b> and <i>italics</i>
+        </p>
+        </article>
+        """
+
+        expected = 'Title An example styled paragraph with bold and italics'
+        self.assertEqual(data.remove_tags(input), expected)
+
+
+class TestKeyFunctions(unittest.TestCase):
+
+    """Test that key_exists and get_opt_key find keys in nested dicts."""
+
+    def setUp(self):
+
+        self.nd = {
+            'a': {'aa': 1, 'ab': 2},
+            'b': {'ba': 'one', 'bb': 'two', 'bc': {'bca': 'three'}},
+            'c': True}
+
+    def test_key_exists(self):
+
+        self.assertTrue(data.key_exists(self.nd, 'a'))
+        self.assertTrue(data.key_exists(self.nd, 'a', 'aa'))
+        self.assertTrue(data.key_exists(self.nd, 'a', 'ab'))
+        self.assertTrue(data.key_exists(self.nd, 'b'))
+        self.assertTrue(data.key_exists(self.nd, 'b', 'ba'))
+        self.assertTrue(data.key_exists(self.nd, 'b', 'bb'))
+        self.assertTrue(data.key_exists(self.nd, 'b', 'bc'))
+        self.assertTrue(data.key_exists(self.nd, 'b', 'bc', 'bca'))
+        self.assertTrue(data.key_exists(self.nd, 'c'))
+        self.assertFalse(data.key_exists(self.nd, 'd'))
+        self.assertFalse(data.key_exists(self.nd, 'd', 'da'))
+
+    def test_get_opt_key(self):
+
+        self.assertEqual(data.get_opt_key(self.nd, 'a'), {'aa': 1, 'ab': 2})
+        self.assertEqual(data.get_opt_key(self.nd, 'a', 'aa'), 1)
+        self.assertEqual(data.get_opt_key(self.nd, 'a', 'ab'), 2)
+        self.assertEqual(data.get_opt_key(self.nd, 'b', 'ba'), 'one')
+        self.assertEqual(data.get_opt_key(self.nd, 'b', 'bb'), 'two')
+        self.assertEqual(data.get_opt_key(self.nd, 'b', 'bc', 'bca'), 'three')
+        self.assertEqual(data.get_opt_key(self.nd, 'c'), True)
+        self.assertEqual(data.get_opt_key(self.nd, 'd'), None)
+        self.assertEqual(data.get_opt_key(self.nd, 'd', 'da'), None)
+
+
+class TestGetEntryUrl(unittest.TestCase):
+
+    """
+    Test that get_entry_url finds the best canonical url for an entry. This
+    test inrementally removes the best candidate url in a mock entry and checks
+    that the function finds the next best candidate url.
+
+    """
+
+    def test_get_entry_url(self):
+
+        mock_entry = get_mock_entry()
+
+        expected = mock_entry['canonicalUrl']
+        self.assertEqual(data.get_entry_url(mock_entry), expected)
+
+        del mock_entry['canonicalUrl']
+        expected = mock_entry['canonical'][0]['href']
+        self.assertEqual(data.get_entry_url(mock_entry), expected)
+
+        del mock_entry['canonical']
+        expected = mock_entry['alternate'][0]['href']
+        self.assertEqual(data.get_entry_url(mock_entry), expected)
+
+
+class TestParseEntry(unittest.TestCase):
+
+    """Test that parse_entry returns the expected json."""
+
+    def test_parse_entry(self):
+
+        mock_entry = get_mock_entry()
+        test_entry = data.parse_entry('id', 'lab', mock_entry)
+
+        self.assertEqual(
+            sorted(list(test_entry.keys())),
+            sorted(data.FIELDNAMES))
+        self.assertEqual(test_entry['tag_id'], 'id')
+        self.assertEqual(test_entry['tag_label'], 'lab')
+        self.assertEqual(test_entry['article_id'], mock_entry['id'])
+        self.assertEqual(test_entry['url'], mock_entry['canonicalUrl'])
+        self.assertEqual(test_entry['title'], mock_entry['title'])
+        self.assertEqual(test_entry['author'], mock_entry['author'])
+        self.assertEqual(test_entry['summary'], 'Lorem ipsum. Doler sit ...')
+
+        self.assertEqual(test_entry['publisher'],
+            mock_entry['origin']['title'])
+
+        self.assertEqual(test_entry['add_timestamp'],
+            mock_entry['actionTimestamp'])
+
+        self.assertEqual(test_entry['keywords'],
+            ' : '.join(mock_entry['keywords']))
+
+        self.assertEqual(test_entry['pub_date'], datetime.date(2018, 7, 3))
+        self.assertEqual(test_entry['add_date'], datetime.date(2018, 7, 3))
+        self.assertEqual(test_entry['add_time'], '16:19:09')

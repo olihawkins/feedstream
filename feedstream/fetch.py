@@ -33,7 +33,7 @@ def fetch_tag_ids():
 
     """Fetch a list of all tag ids."""
 
-    tag_url = 'http://cloud.feedly.com/v3/tags'
+    tag_url = 'https://cloud.feedly.com/v3/tags'
     headers = {'Authorization': 'OAuth {0}'.format(settings.access_token)}
     response = requests.get(tag_url, headers=headers)
     rjson = json.loads(response.text)
@@ -55,7 +55,7 @@ def fetch_tag_entry_ids(tag_id, since=None, continuation=None, count=None):
 
     """
 
-    id_url = 'http://cloud.feedly.com/v3/streams/ids?streamId='
+    id_url = 'https://cloud.feedly.com/v3/streams/ids?streamId='
     tag_id = urllib.parse.quote_plus(tag_id)
     params = ''
 
@@ -85,7 +85,7 @@ def fetch_entry(entry_id):
 
     """Fetch an entry for the given entry id."""
 
-    entry_url = 'http://cloud.feedly.com/v3/entries/'
+    entry_url = 'https://cloud.feedly.com/v3/entries/'
     entry_id = urllib.parse.quote_plus(entry_id)
     url = '{0}{1}'.format(entry_url, entry_id)
     headers = {'Authorization': 'OAuth {0}'.format(settings.access_token)}
@@ -109,7 +109,7 @@ def fetch_tag_contents(tag_id, since=None, continuation=None, count=None):
 
     """
 
-    contents_url = 'http://cloud.feedly.com/v3/streams/contents?streamId='
+    contents_url = 'https://cloud.feedly.com/v3/streams/contents?streamId='
     tag_id = urllib.parse.quote_plus(tag_id)
     params = ''
 

@@ -10,7 +10,7 @@ import feedstream.settings as settings
 # Constants -------------------------------------------------------------------
 
 TAG_RE = re.compile('<.*?>')
-SPACES_RE = re.compile(' +')
+WHITESPACE_RE = re.compile('\s+')
 TIMEZONE = pytz.timezone(settings.timezone)
 FIELDNAMES = [
     'tag_id',
@@ -68,13 +68,13 @@ def get_timestamp_from_datetime(dt):
 def remove_tags(text):
 
     """
-    Remove tags from html summaries. Tags are replaced by spaces and multiple
-    spaces are replaced by a single space.
+    Remove tags from html summaries. Tags are replaced by spaces and then
+    multiple whitespace characters are replaced by a single space.
 
     """
 
     text = re.sub(TAG_RE, ' ', text)
-    text = re.sub(SPACES_RE, ' ', text)
+    text = re.sub(WHITESPACE_RE, ' ', text)
     return text.strip()
 
 def key_exists(data_dict, *keys):
@@ -116,12 +116,12 @@ def get_entry_url(entry):
 
     if key_exists(entry, 'canonical'):
         for c in entry['canonical']:
-            if c['type'] is 'text/html':
+            if c['type'] == 'text/html':
                 return c['href']
 
     if key_exists(entry, 'alternate'):
         for a in entry['alternate']:
-            if a['type'] is 'text/html':
+            if a['type'] == 'text/html':
                 return a['href']
     return None
 
@@ -149,17 +149,27 @@ def parse_entry(tag_id, tag_label, item):
         entry['add_date'] = get_date_from_timestamp(add_date)
         entry['add_time'] = get_time_from_timestamp(
             add_date).strftime('%H:%M:%S')
+    else:
+        entry['add_timestamp'] = None
+        entry['add_date'] = None
+        entry['add_time'] = None
 
     pub_date = get_opt_key(item, 'published')
     if pub_date is not None:
         entry['pub_date'] = get_date_from_timestamp(pub_date)
+    else:
+        entry['pub_date'] = None
 
     summary = get_opt_key(item, 'summary', 'content')
     if summary is not None:
         entry['summary'] = remove_tags(summary)
+    else:
+        entry['summary'] = None
 
     keywords = get_opt_key(item, 'keywords')
     if keywords is not None:
         entry['keywords'] = ' : '.join(keywords)
+    else:
+        entry['keywords'] = None
 
     return entry
