@@ -10,11 +10,14 @@ import feedstream.settings as settings
 # Exceptions ------------------------------------------------------------------
 
 class Error(Exception):
+
     """Base class for exceptions in this module."""
     pass
 
 class ApiError(Error):
-    """Exception raised for API responses whose status code is not 200.
+
+    """
+    Exception raised for API responses whose status code is not 200.
 
     Attributes:
         code -- Status code of the response
