@@ -49,9 +49,9 @@ def fetch_tag_ids():
 def fetch_tag_entry_ids(tag_id, since=None, continuation=None, count=None):
 
     """
-    Fetch a list of all entry ids for the given tag id.This function makes
+    Fetch a list of all entry ids for the given tag id. This function makes
     one request. If the result contains a continuation it must be called again
-    to retrieve additional entry with the continuation argument.
+    to retrieve additional entries with the continuation argument.
 
     """
 
