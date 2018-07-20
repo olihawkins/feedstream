@@ -228,8 +228,9 @@ class TestGetEntryUrl(unittest.TestCase):
 
     """
     Test that get_entry_url finds the best canonical url for an entry. This
-    test inrementally removes the best candidate url in a mock entry and checks
-    that the function finds the next best candidate url.
+    test incrementally removes the best candidate urls in a mock entry and
+    checks that the function finds the next best candidate url after each
+    removal.
 
     """
 
