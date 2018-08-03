@@ -11,7 +11,7 @@ import feedstream as fs
 data = fs.download_entries()
 ```
 
-This function returns a dictionary with three keys:
+This returns a dictionary with three keys:
 
 - `downloaded` contains a Feedly timestamp of the last time data was downloaded from Feedly
 - `fieldnames` is a list of the fieldnames used as keys for each entry in the `entries` list
