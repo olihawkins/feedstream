@@ -71,8 +71,9 @@ def write_entries_csv(entries):
 
         filepath = os.path.join(settings.data_dir, filename)
 
-        with open(filepath, 'w', newline='') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        with open(filepath, 'w', newline='', encoding='utf-8') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames,
+                quoting=csv.QUOTE_NONNUMERIC)
             writer.writeheader()
             for entry in entries:
                 writer.writerow(entry)

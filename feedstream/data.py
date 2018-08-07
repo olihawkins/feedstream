@@ -3,15 +3,23 @@
 # Imports ---------------------------------------------------------------------
 
 import datetime
+import html
 import pytz
 import re
 import feedstream.settings as settings
 
 # Constants -------------------------------------------------------------------
 
-TAG_RE = re.compile('<.*?>')
-WHITESPACE_RE = re.compile('\s+')
+RE_TAG = re.compile(r'<[^>]+?>')
+RE_WHITESPACE = re.compile('\s+')
+RE_WHITESPACE_PUNCTUATION = re.compile(r'\s([?,;:.)}\]"](?:\s|$))')
+RE_WHITESPACE_EXCLAMATION = re.compile(r'\s(!+(?:\s|$))')
+RE_END_CONTINUE = re.compile(' Continue reading\.\.\.\s+$')
+RE_END_DOTS = re.compile('\.\.\.\s+$')
+TRUNCATE_LENGTH = 300
+TRUNCATE_MARKER = '...'
 TIMEZONE = pytz.timezone(settings.timezone)
+SEPARATOR = '<sep>'
 FIELDNAMES = [
     'tag_id',
     'tag_label',
@@ -25,6 +33,8 @@ FIELDNAMES = [
     'author',
     'summary',
     'keywords',
+    'comments',
+    'highlights',
     'article_id']
 
 # Functions -------------------------------------------------------------------
@@ -65,16 +75,23 @@ def get_timestamp_from_datetime(dt):
     ts_ms = int(ts_secs * 1000)
     return ts_ms
 
-def remove_tags(text):
+def clean_text(text):
 
     """
     Remove tags from html summaries. Tags are replaced by spaces and then
-    multiple whitespace characters are replaced by a single space.
+    multiple whitespace characters are replaced by a single space. Whitespace
+    before puncuation is then removed.
 
     """
 
-    text = re.sub(TAG_RE, ' ', text)
-    text = re.sub(WHITESPACE_RE, ' ', text)
+    text = html.unescape(text)
+    text = re.sub(RE_TAG, ' ', text)
+    text = re.sub(RE_WHITESPACE, ' ', text)
+    text = re.sub(RE_WHITESPACE_PUNCTUATION, r'\1', text)
+    text = re.sub(RE_WHITESPACE_EXCLAMATION, r'\1', text)
+    text = re.sub(RE_END_CONTINUE, '', text)
+    text = re.sub(RE_END_DOTS, '', text)
+
     return text.strip()
 
 def key_exists(data_dict, *keys):
@@ -116,14 +133,25 @@ def get_entry_url(entry):
 
     if key_exists(entry, 'canonical'):
         for c in entry['canonical']:
-            if c['type'] == 'text/html':
+            if key_exists(c, 'href'):
                 return c['href']
 
     if key_exists(entry, 'alternate'):
         for a in entry['alternate']:
-            if a['type'] == 'text/html':
+            if key_exists(a, 'href'):
                 return a['href']
+
     return None
+
+def truncate(text, length=TRUNCATE_LENGTH, marker=TRUNCATE_MARKER):
+
+    """Truncate the text to the given length, rounded to the last full word."""
+
+    trunc_len = min(length, len(text))
+    end = text[:trunc_len].rfind(' ')
+    text = text[:end]
+    text = '{0} {1}'.format(text, TRUNCATE_MARKER)
+    return text
 
 def parse_entry(tag_id, tag_label, item):
 
@@ -135,13 +163,26 @@ def parse_entry(tag_id, tag_label, item):
 
     entry = {}
     entry['tag_id'] = tag_id
-    entry['tag_label'] = tag_label
+    entry['tag_label'] = clean_text(tag_label)
     entry['article_id'] = item['id']
     entry['url'] = get_entry_url(item)
-    entry['title'] = get_opt_key(item, 'title')
-    entry['author'] = get_opt_key(item, 'author')
-    entry['publisher'] = get_opt_key(item, 'origin', 'title')
 
+    # Handle title
+    entry['title'] = get_opt_key(item, 'title')
+    if entry['title'] is not None:
+        entry['title'] = clean_text(entry['title'])
+
+    # Handle author
+    entry['author'] = get_opt_key(item, 'author')
+    if entry['author'] is not None:
+        entry['author'] = clean_text(entry['author'])
+
+    # Handle publisher
+    entry['publisher'] = get_opt_key(item, 'origin', 'title')
+    if entry['publisher'] is not None:
+        entry['publisher'] = clean_text(entry['publisher'])
+
+    # Handle add date
     add_date = get_opt_key(item, 'actionTimestamp')
 
     if add_date is not None:
@@ -154,22 +195,66 @@ def parse_entry(tag_id, tag_label, item):
         entry['add_date'] = None
         entry['add_time'] = None
 
+    # Handle pub date
     pub_date = get_opt_key(item, 'published')
+
     if pub_date is not None:
         entry['pub_date'] = get_date_from_timestamp(pub_date)
     else:
         entry['pub_date'] = None
 
+    # Handle summary text
     summary = get_opt_key(item, 'summary', 'content')
-    if summary is not None:
-        entry['summary'] = remove_tags(summary)
-    else:
-        entry['summary'] = None
 
+    if summary is not None:
+        entry['summary'] = clean_text(summary)
+    else:
+        full_content = get_opt_key(item, 'fullContent')
+        if full_content is not None:
+            entry['summary'] = truncate(clean_text(full_content))
+        else:
+            entry['summary'] = None
+
+    # Handle keywords
     keywords = get_opt_key(item, 'keywords')
     if keywords is not None:
-        entry['keywords'] = ' : '.join(keywords)
+        words = []
+        for keyword in keywords:
+            words.append(clean_text(keyword))
+        entry['keywords'] = SEPARATOR.join(words)
     else:
         entry['keywords'] = None
+
+    # Hanlde annotations, which are comments and highlights
+    annotations = get_opt_key(item, 'annotations')
+
+    if annotations is not None:
+
+        comments = []
+        highlights = []
+
+        for annotation in annotations:
+
+            comment = get_opt_key(annotation, 'comment')
+            if comment is not None:
+                comments.append(clean_text(comment))
+
+            highlight = get_opt_key(annotation, 'highlight')
+            if highlight is not None and 'text' in highlight:
+                highlights.append(clean_text(highlight['text']))
+
+        if len(comments) > 0:
+            entry['comments'] = SEPARATOR.join(comments)
+        else:
+            entry['comments'] = None
+
+        if len(highlights) > 0:
+            entry['highlights'] = SEPARATOR.join(highlights)
+        else:
+            entry['highlights'] = None
+
+    else:
+        entry['comments'] = None
+        entry['highlights'] = None
 
     return entry

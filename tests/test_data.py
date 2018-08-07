@@ -167,24 +167,39 @@ class TestGetTimestampFromDatetime(unittest.TestCase):
             self.assertEqual(ts, timestamps[i])
 
 
-class TestRemoveTags(unittest.TestCase):
-
-    """Test that remove_tags romves tags from summary text."""
+class TestCleanText(unittest.TestCase):
 
     def test_remove_tags(self):
 
-        input = """
+        """Test that clean_text removes tags from summary text."""
+
+        input = '''
         <article>
         <h1>Title</h1>
         <p style="color: #ff0000;">
         An example styled paragraph with <b>bold</b> and <i>italics</i>
         </p>
         </article>
-        """
+        '''
 
         expected = 'Title An example styled paragraph with bold and italics'
-        self.assertEqual(data.remove_tags(input), expected)
+        self.assertEqual(data.clean_text(input), expected)
 
+    def test_remove_whitespace(self):
+
+        """
+        Test that clean_text removes trailing whitespace created from tags
+        removed immediately before punctuation.
+
+        """
+
+        input = '''
+        <b>A</b>, <b>A</b>; <b>A</b>: <b>A</b>. <b>A</b>!
+        <b>A</b>!! <b>A</b>? <b>A</b>) <b>A</b>] <b>A</b>}
+        '''
+
+        expected = 'A, A; A: A. A! A!! A? A) A] A}'
+        self.assertEqual(data.clean_text(input), expected)
 
 class TestKeyFunctions(unittest.TestCase):
 
@@ -249,6 +264,10 @@ class TestGetEntryUrl(unittest.TestCase):
         expected = mock_entry['alternate'][0]['href']
         self.assertEqual(data.get_entry_url(mock_entry), expected)
 
+        del mock_entry['alternate'][0]['href']
+        expected = None
+        self.assertEqual(data.get_entry_url(mock_entry), expected)
+
 
 class TestParseEntry(unittest.TestCase):
 
@@ -277,7 +296,7 @@ class TestParseEntry(unittest.TestCase):
             mock_entry['actionTimestamp'])
 
         self.assertEqual(test_entry['keywords'],
-            ' : '.join(mock_entry['keywords']))
+            data.SEPARATOR.join(mock_entry['keywords']))
 
         self.assertEqual(test_entry['pub_date'], datetime.date(2018, 7, 3))
         self.assertEqual(test_entry['add_date'], datetime.date(2018, 7, 3))

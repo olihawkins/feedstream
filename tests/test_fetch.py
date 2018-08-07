@@ -13,11 +13,12 @@ class TestFetchTagIds(unittest.TestCase):
 
     @patch('feedstream.fetch.requests.get')
     @patch('feedstream.fetch.settings.access_token', 'access token')
+    @patch('feedstream.fetch.settings.enterprise', False)
     def test_fetch_tag_ids(self, mock_get):
 
         """
-        Test that fetch_tag_id passes the correct url and headers, and
-        returns a json object.
+        Test that fetch_tag_id passes the correct url and headers for a
+        personal account, and returns a json object.
 
         """
 
@@ -25,10 +26,31 @@ class TestFetchTagIds(unittest.TestCase):
         headers = {'Authorization': 'OAuth {0}'.format('access token')}
 
         mock_get.return_value.ok = True
-        mock_get.return_value.text = '{{"url": "{0}"}}'.format(url)
+        mock_get.return_value.text = '[{{"url": "{0}"}}]'.format(url)
 
         response = fetch.fetch_tag_ids()
-        self.assertEqual(response['url'], url)
+        self.assertEqual(response[0]['url'], url)
+        mock_get.assert_called_once_with(url, headers=headers)
+
+    @patch('feedstream.fetch.requests.get')
+    @patch('feedstream.fetch.settings.access_token', 'access token')
+    @patch('feedstream.fetch.settings.enterprise', True)
+    def test_fetch_tag_ids(self, mock_get):
+
+        """
+        Test that fetch_tag_id passes the correct url and headers for an
+        enterprise account, and returns a json object.
+
+        """
+
+        url = 'https://cloud.feedly.com/v3/enterprise/tags'
+        headers = {'Authorization': 'OAuth {0}'.format('access token')}
+
+        mock_get.return_value.ok = True
+        mock_get.return_value.text = '[{{"url": "{0}"}}]'.format(url)
+
+        response = fetch.fetch_tag_ids()
+        self.assertEqual(response[0]['url'], url)
         mock_get.assert_called_once_with(url, headers=headers)
 
     @patch('feedstream.fetch.requests.get')
@@ -76,34 +98,34 @@ class TestFetchTagEntryIds(unittest.TestCase):
         mock_get.return_value.ok = True
 
         # Test with just a tag id
-        mock_get.return_value.text = '{{"url": "{0}"}}'.format(url_tag)
+        mock_get.return_value.text = '[{{"url": "{0}"}}]'.format(url_tag)
         response = fetch.fetch_tag_entry_ids(tag_id)
-        self.assertEqual(response['url'], url_tag)
+        self.assertEqual(response[0]['url'], url_tag)
         mock_get.assert_called_with(url_tag, headers=headers)
 
         # Test with since argument
-        mock_get.return_value.text = '{{"url": "{0}"}}'.format(url_sin)
+        mock_get.return_value.text = '[{{"url": "{0}"}}]'.format(url_sin)
         response = fetch.fetch_tag_entry_ids(tag_id, since=1)
-        self.assertEqual(response['url'], url_sin)
+        self.assertEqual(response[0]['url'], url_sin)
         mock_get.assert_called_with(url_sin, headers=headers)
 
         # Test with continuation argument
-        mock_get.return_value.text = '{{"url": "{0}"}}'.format(url_con)
+        mock_get.return_value.text = '[{{"url": "{0}"}}]'.format(url_con)
         response = fetch.fetch_tag_entry_ids(tag_id, continuation=2)
-        self.assertEqual(response['url'], url_con)
+        self.assertEqual(response[0]['url'], url_con)
         mock_get.assert_called_with(url_con, headers=headers)
 
         # Test with count argument
-        mock_get.return_value.text = '{{"url": "{0}"}}'.format(url_cou)
+        mock_get.return_value.text = '[{{"url": "{0}"}}]'.format(url_cou)
         response = fetch.fetch_tag_entry_ids(tag_id, count=3)
-        self.assertEqual(response['url'], url_cou)
+        self.assertEqual(response[0]['url'], url_cou)
         mock_get.assert_called_with(url_cou, headers=headers)
 
         # Test with all arguments
-        mock_get.return_value.text = '{{"url": "{0}"}}'.format(url_all)
+        mock_get.return_value.text = '[{{"url": "{0}"}}]'.format(url_all)
         response = fetch.fetch_tag_entry_ids(tag_id,
             since=1, continuation=2, count=3)
-        self.assertEqual(response['url'], url_all)
+        self.assertEqual(response[0]['url'], url_all)
         mock_get.assert_called_with(url_all, headers=headers)
 
     @patch('feedstream.fetch.requests.get')
@@ -140,7 +162,7 @@ class TestFetchEntry(unittest.TestCase):
         headers = {'Authorization': 'OAuth {0}'.format('access token')}
 
         mock_get.return_value.ok = True
-        mock_get.return_value.text = '{{"url": "{0}"}}'.format(url)
+        mock_get.return_value.text = '[{{"url": "{0}"}}]'.format(url)
 
         response = fetch.fetch_entry('entry_id')
         self.assertEqual(response['url'], url)
@@ -161,7 +183,7 @@ class TestFetchEntry(unittest.TestCase):
             '"errorMessage":"API handler not found"}')
 
         with self.assertRaises(fetch.ApiError):
-            response = fetch.fetch_tag_ids()
+            response = fetch.fetch_entry('entry_id')
 
 class TestFetchTagContents(unittest.TestCase):
 
@@ -190,34 +212,34 @@ class TestFetchTagContents(unittest.TestCase):
         mock_get.return_value.ok = True
 
         # Test with just a tag id
-        mock_get.return_value.text = '{{"url": "{0}"}}'.format(url_tag)
+        mock_get.return_value.text = '[{{"url": "{0}"}}]'.format(url_tag)
         response = fetch.fetch_tag_contents(tag_id)
-        self.assertEqual(response['url'], url_tag)
+        self.assertEqual(response[0]['url'], url_tag)
         mock_get.assert_called_with(url_tag, headers=headers)
 
         # Test with since argument
-        mock_get.return_value.text = '{{"url": "{0}"}}'.format(url_sin)
+        mock_get.return_value.text = '[{{"url": "{0}"}}]'.format(url_sin)
         response = fetch.fetch_tag_contents(tag_id, since=1)
-        self.assertEqual(response['url'], url_sin)
+        self.assertEqual(response[0]['url'], url_sin)
         mock_get.assert_called_with(url_sin, headers=headers)
 
         # Test with continuation argument
-        mock_get.return_value.text = '{{"url": "{0}"}}'.format(url_con)
+        mock_get.return_value.text = '[{{"url": "{0}"}}]'.format(url_con)
         response = fetch.fetch_tag_contents(tag_id, continuation=2)
-        self.assertEqual(response['url'], url_con)
+        self.assertEqual(response[0]['url'], url_con)
         mock_get.assert_called_with(url_con, headers=headers)
 
         # Test with count argument
-        mock_get.return_value.text = '{{"url": "{0}"}}'.format(url_cou)
+        mock_get.return_value.text = '[{{"url": "{0}"}}]'.format(url_cou)
         response = fetch.fetch_tag_contents(tag_id, count=3)
-        self.assertEqual(response['url'], url_cou)
+        self.assertEqual(response[0]['url'], url_cou)
         mock_get.assert_called_with(url_cou, headers=headers)
 
         # Test with all arguments
-        mock_get.return_value.text = '{{"url": "{0}"}}'.format(url_all)
+        mock_get.return_value.text = '[{{"url": "{0}"}}]'.format(url_all)
         response = fetch.fetch_tag_contents(tag_id,
             since=1, continuation=2, count=3)
-        self.assertEqual(response['url'], url_all)
+        self.assertEqual(response[0]['url'], url_all)
         mock_get.assert_called_with(url_all, headers=headers)
 
     @patch('feedstream.fetch.requests.get')

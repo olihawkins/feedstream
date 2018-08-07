@@ -70,6 +70,7 @@ class TestDownloadEntries(unittest.TestCase):
 
     @patch('feedstream.fetch.requests.get', side_effect=mock_requests_get)
     @patch('feedstream.fetch.settings.access_token', 'access token')
+    @patch('feedstream.fetch.settings.enterprise', False)
     @patch('feedstream.fetch.settings.download_new', False)
     @patch('feedstream.data.settings.timezone', 'Europe/London')
     def test_download_entries(self, mock_get):
@@ -107,6 +108,7 @@ class TestDownloadEntries(unittest.TestCase):
 
     @patch('feedstream.fetch.requests.get', side_effect=mock_requests_get)
     @patch('feedstream.fetch.settings.access_token', 'access token')
+    @patch('feedstream.fetch.settings.enterprise', False)
     @patch('feedstream.fetch.settings.download_new', False)
     @patch('feedstream.data.settings.timezone', 'Europe/London')
     def test_download_entries_all(self, mock_get):
@@ -135,6 +137,7 @@ class TestDownloadEntries(unittest.TestCase):
 
     @patch('feedstream.fetch.requests.get', side_effect=mock_requests_get)
     @patch('feedstream.fetch.settings.access_token', 'access token')
+    @patch('feedstream.fetch.settings.enterprise', False)
     @patch('feedstream.fetch.settings.download_new', True)
     @patch('feedstream.data.settings.timezone', 'Europe/London')
     @patch('feedstream.download.get_last_downloaded', mock_get_last_downloaded)
@@ -171,7 +174,7 @@ class TestTimestampFunctions(unittest.TestCase):
     """
 
     def setUp(self):
-        
+
         self.timestamp = 1000
         self.timestamp_file = 'timestamp.txt'
         open(self.timestamp_file, 'a').close()
