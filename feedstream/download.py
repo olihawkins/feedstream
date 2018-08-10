@@ -97,6 +97,7 @@ def get_last_downloaded():
     except FileNotFoundError:
         return None
 
+
 def set_last_downloaded(timestamp):
 
     """Set the timestamp for the last time data was downloaded."""

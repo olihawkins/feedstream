@@ -14,8 +14,8 @@ RE_TAG = re.compile(r'<[^>]+?>')
 RE_WHITESPACE = re.compile('\s+')
 RE_WHITESPACE_PUNCTUATION = re.compile(r'\s([?,;:.)}\]"](?:\s|$))')
 RE_WHITESPACE_EXCLAMATION = re.compile(r'\s(!+(?:\s|$))')
-RE_END_CONTINUE = re.compile(' Continue reading\.\.\.\s+$')
-RE_END_DOTS = re.compile('\.\.\.\s+$')
+RE_END_CONTINUE = re.compile(' Continue reading\.\.\.\s*$')
+RE_END_DOTS = re.compile('\.\.\.\s*$')
 TRUNCATE_LENGTH = 300
 TRUNCATE_MARKER = '...'
 TIMEZONE = pytz.timezone(settings.timezone)
@@ -46,12 +46,14 @@ def get_datetime_from_timestamp(ts_ms, tz=TIMEZONE):
     ts_secs = int(ts_ms / 1000)
     return datetime.datetime.fromtimestamp(ts_secs, tz=tz)
 
+
 def get_date_from_timestamp(ts_ms, tz=TIMEZONE):
 
     """Get Feedly timestamp as a date."""
 
     ts_secs = ts_ms / 1000
     return datetime.datetime.fromtimestamp(ts_secs, tz=tz).date()
+
 
 def get_time_from_timestamp(ts_ms, tz=TIMEZONE):
 
@@ -60,12 +62,14 @@ def get_time_from_timestamp(ts_ms, tz=TIMEZONE):
     ts_secs = ts_ms / 1000
     return datetime.datetime.fromtimestamp(ts_secs, tz=tz).time()
 
+
 def get_iso_from_timestamp(ts_ms, tz=TIMEZONE):
 
     """Get Feedly timestamp as an ISO format string."""
 
     ts_secs = ts_ms / 1000
     return datetime.datetime.fromtimestamp(ts_secs, tz=tz).isoformat()
+
 
 def get_timestamp_from_datetime(dt):
 
@@ -75,24 +79,6 @@ def get_timestamp_from_datetime(dt):
     ts_ms = int(ts_secs * 1000)
     return ts_ms
 
-def clean_text(text):
-
-    """
-    Remove tags from html summaries. Tags are replaced by spaces and then
-    multiple whitespace characters are replaced by a single space. Whitespace
-    before puncuation is then removed.
-
-    """
-
-    text = html.unescape(text)
-    text = re.sub(RE_TAG, ' ', text)
-    text = re.sub(RE_WHITESPACE, ' ', text)
-    text = re.sub(RE_WHITESPACE_PUNCTUATION, r'\1', text)
-    text = re.sub(RE_WHITESPACE_EXCLAMATION, r'\1', text)
-    text = re.sub(RE_END_CONTINUE, '', text)
-    text = re.sub(RE_END_DOTS, '', text)
-
-    return text.strip()
 
 def key_exists(data_dict, *keys):
 
@@ -106,6 +92,7 @@ def key_exists(data_dict, *keys):
         except KeyError:
             return False
     return True
+
 
 def get_opt_key(data_dict, *keys):
 
@@ -123,6 +110,7 @@ def get_opt_key(data_dict, *keys):
         except KeyError:
             return None
     return element
+
 
 def get_entry_url(entry):
 
@@ -143,15 +131,44 @@ def get_entry_url(entry):
 
     return None
 
-def truncate(text, length=TRUNCATE_LENGTH, marker=TRUNCATE_MARKER):
 
-    """Truncate the text to the given length, rounded to the last full word."""
+def clean_text(text):
 
-    trunc_len = min(length, len(text))
-    end = text[:trunc_len].rfind(' ')
-    text = text[:end]
-    text = '{0} {1}'.format(text, TRUNCATE_MARKER)
+    """
+    Cleans html text. Removes tags from html summaries. Tags are replaced by
+    spaces and then multiple whitespace characters are replaced by a single
+    space. Whitespace before puncuation is then removed, followed by any
+    continue reading markers. Any leading or trailing whitespace is stripped.
+
+    """
+
+    text = html.unescape(text)
+    text = re.sub(RE_TAG, ' ', text)
+    text = re.sub(RE_WHITESPACE, ' ', text)
+    text = re.sub(RE_WHITESPACE_PUNCTUATION, r'\1', text)
+    text = re.sub(RE_WHITESPACE_EXCLAMATION, r'\1', text)
+    text = re.sub(RE_END_CONTINUE, '', text)
+    text = re.sub(RE_END_DOTS, '', text)
+
+    return text.strip()
+
+
+def truncate(text, length=TRUNCATE_LENGTH, marker=None):
+
+    """
+    Truncate the text to the given length, rounded to the last full word.
+    If a truncation marker is set, add a space to the string followed by
+    the given truncation marker.
+
+    """
+
+    if len(text) > length:
+        end = text[:length].rfind(' ')
+        text = text[:end]
+        if marker is not None:
+            text = '{0} {1}'.format(text, marker)
     return text
+
 
 def parse_entry(tag_id, tag_label, item):
 
@@ -225,7 +242,7 @@ def parse_entry(tag_id, tag_label, item):
     else:
         entry['keywords'] = None
 
-    # Hanlde annotations, which are comments and highlights
+    # Handle annotations, which are comments and highlights
     annotations = get_opt_key(item, 'annotations')
 
     if annotations is not None:

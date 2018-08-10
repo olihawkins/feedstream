@@ -40,8 +40,14 @@ def get_mock_entry():
         'origin': {'title': 'Publisher'},
         'actionTimestamp': 1530631149285,
         'published': 1530631149285,
-        'summary': {'content': '<p>Lorem ipsum.</p> <p>Doler <b>sit</b> ...'},
-        'keywords': ['some', 'keywords']}
+        'summary': {'content': '<p>Lorem ipsum.</p> <p>Doler <b>sit</b> amet'},
+        'keywords': ['some', 'keywords'],
+        'annotations': [
+            {'comment': 'comment one'},
+            {'comment': 'comment two'},
+            {'highlight': {'text': 'highlight one'}},
+            {'highlight': {'text': 'highlight two'}}]
+        }
 
     return mock_entry
 
@@ -169,6 +175,18 @@ class TestGetTimestampFromDatetime(unittest.TestCase):
 
 class TestCleanText(unittest.TestCase):
 
+    def test_unescape_entities(self):
+
+        """
+        Test that clean_text unescapes entities in summary text, and
+        that unescaped whitespace characters are removed.
+
+        """
+
+        input = '''&#13;&#32;&#33;&#34;&#39;&amp;'''
+        expected = '''!"'&'''
+        self.assertEqual(data.clean_text(input), expected)
+
     def test_remove_tags(self):
 
         """Test that clean_text removes tags from summary text."""
@@ -200,6 +218,72 @@ class TestCleanText(unittest.TestCase):
 
         expected = 'A, A; A: A. A! A!! A? A) A] A}'
         self.assertEqual(data.clean_text(input), expected)
+
+    def test_remove_markers(self):
+
+        """Test that clean_text removes continue reading markers."""
+
+        input = 'An example paragraph of text. Continue reading...'
+        expected = 'An example paragraph of text.'
+        self.assertEqual(data.clean_text(input), expected)
+
+        input = 'An example paragraph of text. ...'
+        expected = 'An example paragraph of text.'
+        self.assertEqual(data.clean_text(input), expected)
+
+
+class TestTruncate(unittest.TestCase):
+
+    def test_truncate(self):
+
+        """
+        Test that truncate cuts text to the given length, rounded to the
+        nearest whole word.
+
+        """
+
+        input = 'An example paragraph of text.'
+
+        self.assertEqual(data.truncate(input, length=10),
+            'An')
+        self.assertEqual(data.truncate(input, length=11),
+            'An example')
+        self.assertEqual(data.truncate(input, length=28),
+            'An example paragraph of')
+        self.assertEqual(data.truncate(input, length=29),
+            input)
+
+    def test_truncate_marker(self):
+
+        """Test that truncate can apply a truncation marker."""
+
+        input = 'An example paragraph of text.'
+        m = '...'
+
+        self.assertEqual(data.truncate(input, length=10, marker=m),
+            'An ...')
+        self.assertEqual(data.truncate(input, length=11, marker=m),
+            'An example ...')
+        self.assertEqual(data.truncate(input, length=28 ,marker=m),
+            'An example paragraph of ...')
+        self.assertEqual(data.truncate(input, length=29, marker=m),
+            input)
+
+    def test_truncate_empty_marker(self):
+
+        """Test that an empty truncation marker can be set."""
+
+        input = 'An example paragraph of text.'
+        m = ''
+
+        self.assertEqual(data.truncate(input, length=10, marker=m),
+                'An ')
+        self.assertEqual(data.truncate(input, length=11, marker=m),
+                'An example ')
+        self.assertEqual(data.truncate(input, length=28, marker=m),
+            'An example paragraph of ')
+        self.assertEqual(data.truncate(input, length=29, marker=m), input)
+
 
 class TestKeyFunctions(unittest.TestCase):
 
@@ -287,7 +371,7 @@ class TestParseEntry(unittest.TestCase):
         self.assertEqual(test_entry['url'], mock_entry['canonicalUrl'])
         self.assertEqual(test_entry['title'], mock_entry['title'])
         self.assertEqual(test_entry['author'], mock_entry['author'])
-        self.assertEqual(test_entry['summary'], 'Lorem ipsum. Doler sit ...')
+        self.assertEqual(test_entry['summary'], 'Lorem ipsum. Doler sit amet')
 
         self.assertEqual(test_entry['publisher'],
             mock_entry['origin']['title'])
@@ -297,6 +381,12 @@ class TestParseEntry(unittest.TestCase):
 
         self.assertEqual(test_entry['keywords'],
             data.SEPARATOR.join(mock_entry['keywords']))
+
+        self.assertEqual(test_entry['comments'],
+            data.SEPARATOR.join(['comment one', 'comment two']))
+
+        self.assertEqual(test_entry['highlights'],
+            data.SEPARATOR.join(['highlight one', 'highlight two']))
 
         self.assertEqual(test_entry['pub_date'], datetime.date(2018, 7, 3))
         self.assertEqual(test_entry['add_date'], datetime.date(2018, 7, 3))

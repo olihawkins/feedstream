@@ -14,6 +14,7 @@ class Error(Exception):
     """Base class for exceptions in this module."""
     pass
 
+
 class ApiError(Error):
 
     """
@@ -53,6 +54,7 @@ def fetch_tag_ids():
 
     return rjson
 
+
 def fetch_tag_entry_ids(tag_id, since=None, continuation=None, count=None):
 
     """
@@ -88,6 +90,7 @@ def fetch_tag_entry_ids(tag_id, since=None, continuation=None, count=None):
 
     return rjson
 
+
 def fetch_entry(entry_id):
 
     """Fetch an entry for the given entry id."""
@@ -106,6 +109,7 @@ def fetch_entry(entry_id):
             rjson['errorMessage'])
 
     return rjson[0]
+
 
 def fetch_tag_contents(tag_id, since=None, continuation=None, count=None):
 
@@ -132,25 +136,6 @@ def fetch_tag_contents(tag_id, since=None, continuation=None, count=None):
     url = '{0}{1}{2}'.format(contents_url, tag_id, params)
     headers = {'Authorization': 'OAuth {0}'.format(settings.access_token)}
     response = requests.get(url, headers=headers)
-    rjson = json.loads(response.text)
-
-    if response.ok is not True:
-        raise ApiError(
-            response.status_code,
-            rjson['errorId'],
-            rjson['errorMessage'])
-
-    return rjson
-
-# Enterprise API ----------------------------------------------------------------
-
-def fetch_enterprise_tag_ids():
-
-    """Fetch a list of all tag ids."""
-
-    tag_url = 'https://cloud.feedly.com/v3/enterprise/tags'
-    headers = {'Authorization': 'OAuth {0}'.format(settings.access_token)}
-    response = requests.get(tag_url, headers=headers)
     rjson = json.loads(response.text)
 
     if response.ok is not True:
