@@ -10,3 +10,4 @@ data_dir = 'data'                   # Directory for downloaded data
 download_title = 'feedly'           # Filename prefix for download files
 download_new = True                 # Download just the newly added entries
 timestamp_file = 'timestamp.txt'    # File stores timestamp of last download
+template_dir = 'templates'          # Directory for mail templates

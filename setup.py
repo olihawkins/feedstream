@@ -9,6 +9,6 @@ setup(
     url = 'https://github.com/olihawkins/feedstream',
     download_url = 'https://github.com/olihawkins/feedstream/tarball/0.1.0',
     keywords = ['Feedly'],
-    install_requires = ['requests'],
+    install_requires = ['pandas, requests'],
     classifiers = [],
 )

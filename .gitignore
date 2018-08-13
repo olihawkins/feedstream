@@ -107,5 +107,6 @@ venv.bak/
 data/
 docs/
 feedstream/settings.py
+feedstream/mail.py
 feedstream.bat
 .DS_Store

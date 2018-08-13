@@ -10,13 +10,14 @@ import feedstream.settings as settings
 
 # Constants -------------------------------------------------------------------
 
-RE_TAG = re.compile(r'<[^>]+?>')
+RE_PARA_TAG = re.compile('<p>')
+RE_OTHER_TAG = re.compile(r'<[^>]+?>')
 RE_WHITESPACE = re.compile('\s+')
 RE_WHITESPACE_PUNCTUATION = re.compile(r'\s([?,;:.)}\]"](?:\s|$))')
 RE_WHITESPACE_EXCLAMATION = re.compile(r'\s(!+(?:\s|$))')
 RE_END_CONTINUE = re.compile(' Continue reading\.\.\.\s*$')
 RE_END_DOTS = re.compile('\.\.\.\s*$')
-TRUNCATE_LENGTH = 300
+TRUNCATE_LENGTH = 500
 TRUNCATE_MARKER = '...'
 TIMEZONE = pytz.timezone(settings.timezone)
 SEPARATOR = '<sep>'
@@ -143,7 +144,8 @@ def clean_text(text):
     """
 
     text = html.unescape(text)
-    text = re.sub(RE_TAG, ' ', text)
+    text = re.sub(RE_PARA_TAG, ' ', text)
+    text = re.sub(RE_OTHER_TAG, '', text)
     text = re.sub(RE_WHITESPACE, ' ', text)
     text = re.sub(RE_WHITESPACE_PUNCTUATION, r'\1', text)
     text = re.sub(RE_WHITESPACE_EXCLAMATION, r'\1', text)
@@ -221,14 +223,16 @@ def parse_entry(tag_id, tag_label, item):
         entry['pub_date'] = None
 
     # Handle summary text
+    full_content = get_opt_key(item, 'fullContent')
     summary = get_opt_key(item, 'summary', 'content')
 
-    if summary is not None:
-        entry['summary'] = clean_text(summary)
+    if full_content is not None and len(clean_text(full_content)) != 0:
+        entry['summary'] = truncate(
+            clean_text(full_content), marker=TRUNCATE_MARKER)
     else:
-        full_content = get_opt_key(item, 'fullContent')
-        if full_content is not None:
-            entry['summary'] = truncate(clean_text(full_content))
+        if summary is not None and len(clean_text(summary)) != 0:
+            entry['summary'] = truncate(
+                clean_text(summary), marker=TRUNCATE_MARKER)
         else:
             entry['summary'] = None
 

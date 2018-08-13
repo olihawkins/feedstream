@@ -12,3 +12,5 @@ from . import data
 from .data import *
 from . import download
 from .download import *
+from . import mail
+from .mail import *
