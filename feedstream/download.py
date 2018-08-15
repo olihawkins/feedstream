@@ -8,11 +8,11 @@ import os
 import pathlib
 import feedstream.fetch as fetch
 import feedstream.data as data
-import feedstream.settings as settings
+from feedstream.config import settings
 
 # Constants -------------------------------------------------------------------
 
-TIMESTAMP_FILE = os.path.join(settings.data_dir, settings.timestamp_file)
+TIMESTAMP_FILE = os.path.join(settings.timestamp_file)
 
 # Download functions ----------------------------------------------------------
 
@@ -65,7 +65,7 @@ def write_entries_csv(entries):
         pathlib.Path(settings.data_dir).mkdir(exist_ok=True)
 
         filename = '{0}-{1}-{2}.csv'.format(
-            settings.download_title,
+            settings.download_prefix,
             data.get_date_from_timestamp(downloaded),
             data.get_time_from_timestamp(downloaded).strftime('%H-%M-%S'))
 

@@ -5,7 +5,7 @@
 import json
 import requests
 import urllib
-import feedstream.settings as settings
+from feedstream.config import settings
 
 # Exceptions ------------------------------------------------------------------
 
@@ -21,15 +21,15 @@ class ApiError(Error):
     Exception raised for API responses whose status code is not 200.
 
     Attributes:
-        code -- Status code of the response
-        error_id -- API error id
-        error_msg -- API error message
+        status_code -- status code of the response
+        api_id -- API error id
+        api_msg -- API error message
     """
 
-    def __init__(self, code, error_id, error_msg):
-        self.code = code
-        self.error_id = error_id
-        self.error_msg = error_msg
+    def __init__(self, status_code, api_id, api_msg):
+        self.status_code = status_code
+        self.api_id = api_id
+        self.api_msg = api_msg
 
 # Personal API ----------------------------------------------------------------
 

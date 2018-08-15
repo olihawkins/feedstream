@@ -193,7 +193,7 @@ class TestCleanText(unittest.TestCase):
 
         input = '''
         <article>
-        <h1>Title</h1>
+        <h1 style="font-weight: bold;">Title</h1>
         <p style="color: #ff0000;">
         An example styled paragraph with <b>bold</b> and <i>italics</i>
         </p>
@@ -217,18 +217,6 @@ class TestCleanText(unittest.TestCase):
         '''
 
         expected = 'A, A; A: A. A! A!! A? A) A] A}'
-        self.assertEqual(data.clean_text(input), expected)
-
-    def test_remove_markers(self):
-
-        """Test that clean_text removes continue reading markers."""
-
-        input = 'An example paragraph of text. Continue reading...'
-        expected = 'An example paragraph of text.'
-        self.assertEqual(data.clean_text(input), expected)
-
-        input = 'An example paragraph of text. ...'
-        expected = 'An example paragraph of text.'
         self.assertEqual(data.clean_text(input), expected)
 
 

@@ -6,13 +6,20 @@ import datetime
 import html
 import pytz
 import re
-import feedstream.settings as settings
+from feedstream.config import settings
 
 # Constants -------------------------------------------------------------------
 
-RE_PARA_TAG = re.compile('<p>')
+RE_DIV_TAG = re.compile(r'<div\s*[^>]*?>')
+RE_HEADER_TAG = re.compile(r'<h\d+\s*[^>]*?>')
+RE_PARA_TAG = re.compile(r'<p\s*[^>]*?>')
+RE_ARTICLE_TAG = re.compile(r'<article\s*[^>]*?>')
+RE_BLOCKQUOTE_TAG = re.compile(r'<blockquote\s*[^>]*?>')
+RE_FIGCAPTION_TAG = re.compile(r'<figcaption\s*[^>]*?>')
+RE_LI_TAG = re.compile(r'<li\s*[^>]*?>')
+RE_HR_TAG = re.compile(r'<hr\s*[^>]*?>')
 RE_OTHER_TAG = re.compile(r'<[^>]+?>')
-RE_WHITESPACE = re.compile('\s+')
+RE_WHITESPACE = re.compile(r'\s+')
 RE_WHITESPACE_PUNCTUATION = re.compile(r'\s([?,;:.)}\]"](?:\s|$))')
 RE_WHITESPACE_EXCLAMATION = re.compile(r'\s(!+(?:\s|$))')
 RE_END_CONTINUE = re.compile(' Continue reading\.\.\.\s*$')
@@ -143,15 +150,30 @@ def clean_text(text):
 
     """
 
+    # Unescape html entities
     text = html.unescape(text)
+
+    # Replace opening block level elements with a single space
+    text = re.sub(RE_DIV_TAG, ' ', text)
+    text = re.sub(RE_HEADER_TAG, ' ', text)
     text = re.sub(RE_PARA_TAG, ' ', text)
+    text = re.sub(RE_ARTICLE_TAG, ' ', text)
+    text = re.sub(RE_BLOCKQUOTE_TAG, ' ', text)
+    text = re.sub(RE_FIGCAPTION_TAG, ' ', text)
+    text = re.sub(RE_LI_TAG, ' ', text)
+    text = re.sub(RE_HR_TAG, ' ', text)
+
+    # Remove all other tags completely
     text = re.sub(RE_OTHER_TAG, '', text)
+
+    # Replace multiple whitespace characters with a single space
     text = re.sub(RE_WHITESPACE, ' ', text)
+
+    # Remove whitespace before punctuation
     text = re.sub(RE_WHITESPACE_PUNCTUATION, r'\1', text)
     text = re.sub(RE_WHITESPACE_EXCLAMATION, r'\1', text)
-    text = re.sub(RE_END_CONTINUE, '', text)
-    text = re.sub(RE_END_DOTS, '', text)
 
+    # Strip any leading or trailing whitespace and return
     return text.strip()
 
 
