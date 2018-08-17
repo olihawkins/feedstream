@@ -98,10 +98,10 @@ class TestDownloadEntries(unittest.TestCase):
         self.assertEqual(entries['fieldnames'], fieldnames)
 
         # Check the number of entries are as expected
-        self.assertEqual(len(entries['entries']), 5)
+        self.assertEqual(len(entries['items']), 5)
 
         # Check the json for each entry has the expected structre
-        for test_entry in entries['entries']:
+        for test_entry in entries['items']:
             self.assertEqual(
                 sorted(list(test_entry.keys())),
                 sorted(data.FIELDNAMES))

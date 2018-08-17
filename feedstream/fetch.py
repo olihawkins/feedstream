@@ -111,12 +111,12 @@ def fetch_entry(entry_id):
     return rjson[0]
 
 
-def fetch_tag_contents(tag_id, since=None, continuation=None, count=None):
+def fetch_tag_entries(tag_id, since=None, continuation=None, count=None):
 
     """
-    Fetch a list of entries and their contents for the given tag. This function
-    makes one request. If the result contains a continuation it must be called
-    again to retrieve additional entries with the continuation argument.
+    Fetch a list of all entries for the given tag. This function makes one
+    request. If the result contains a continuation it must be called again to
+    retrieve additional entries with the continuation argument.
 
     """
 

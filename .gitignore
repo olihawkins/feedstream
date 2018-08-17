@@ -1,5 +1,9 @@
 __pycache__/
 _production/
-app/
+app/config/config.json
+app/data/*
+app/recipients/*
+app/timestamp/*
 feedstream.bat
 .DS_Store
+desktop.ini

@@ -20,7 +20,7 @@ def download_entries():
 
     """Download entries from each tag to a csv."""
 
-    entries = []
+    items = []
     since = get_last_downloaded() if settings.download_new else None
     downloaded = data.get_timestamp_from_datetime(datetime.datetime.now())
     tag_ids = fetch.fetch_tag_ids()
@@ -31,13 +31,13 @@ def download_entries():
 
         while True:
 
-            contents = fetch.fetch_tag_contents(tag_id['id'],
+            contents = fetch.fetch_tag_entries(tag_id['id'],
                 since=since, continuation=continuation)
 
             for item in contents['items']:
 
-                entry = data.parse_entry(tag_id['id'], tag_id['label'], item)
-                entries.append(entry)
+                item = data.parse_entry(tag_id['id'], tag_id['label'], item)
+                items.append(item)
 
             continuation = data.get_opt_key(contents, 'continuation')
             if continuation is None:
@@ -46,7 +46,7 @@ def download_entries():
     entries = {
         'downloaded': downloaded,
         'fieldnames': data.FIELDNAMES,
-        'entries': entries}
+        'items': items}
 
     return entries
 
@@ -58,7 +58,7 @@ def write_entries_csv(entries):
 
     downloaded = entries['downloaded']
     fieldnames = entries['fieldnames']
-    entries = entries['entries']
+    items = entries['items']
 
     try:
 
@@ -75,8 +75,8 @@ def write_entries_csv(entries):
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames,
                 quoting=csv.QUOTE_NONNUMERIC)
             writer.writeheader()
-            for entry in entries:
-                writer.writerow(entry)
+            for item in items:
+                writer.writerow(item)
 
         set_last_downloaded(downloaded)
         return filename

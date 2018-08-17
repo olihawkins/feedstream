@@ -27,7 +27,7 @@ def get_mail_users():
 
 
 def get_mail_articles():
-    return pd.DataFrame(download.download_entries()['entries'])
+    return pd.DataFrame(download.download_entries()['items'])
 
 
 def get_users_articles(users, articles):
@@ -71,22 +71,28 @@ def create_mail_body(articles):
 
         if tag_id != row['tag_id']:
             tags.append(TEMPLATE_TAG.format(
-                tag_label=tag_label, items=''.join(items)))
+                tag_label=tag_label,
+                items=''.join(items)))
             items = []
 
         items.append(TEMPLATE_ITEM.format(
-            url=row['url'], title=row['title'], summary=row['summary']))
+            url=row['url'],
+            title=row['title'],
+            short_content=row['short_content']))
 
         tag_id = row['tag_id']
         tag_label = row['tag_label']
 
     tags.append(TEMPLATE_TAG.format(
-        tag_label=tag_label, items=''.join(items)))
+        tag_label=tag_label,
+        items=''.join(items)))
 
     date = datetime.date.today().strftime('%A %d %B %Y')
-    mail = TEMPLATE_MAIL.format(date=date, tags=''.join(tags))
+    mail = TEMPLATE_MAIL.format(
+        date=date,
+        tags=''.join(tags))
 
-    with open(os.path.join('_production', 'new_test.html'), 'w') as test_mail:
+    with open(os.path.join('_production', 'test.html'), 'w') as test_mail:
         test_mail.write(mail)
 
 

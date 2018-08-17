@@ -40,6 +40,8 @@ FIELDNAMES = [
     'title',
     'author',
     'summary',
+    'full_content',
+    'short_content',
     'keywords',
     'comments',
     'highlights',
@@ -244,19 +246,30 @@ def parse_entry(tag_id, tag_label, item):
     else:
         entry['pub_date'] = None
 
-    # Handle summary text
+    # Handle content fields
     full_content = get_opt_key(item, 'fullContent')
     summary = get_opt_key(item, 'summary', 'content')
 
     if full_content is not None and len(clean_text(full_content)) != 0:
-        entry['summary'] = truncate(
-            clean_text(full_content), marker=TRUNCATE_MARKER)
-    else:
+
+        entry['full_content'] = clean_text(full_content)
+        entry['short_content'] = truncate(entry['full_content'],
+            marker=TRUNCATE_MARKER)
         if summary is not None and len(clean_text(summary)) != 0:
-            entry['summary'] = truncate(
-                clean_text(summary), marker=TRUNCATE_MARKER)
+            entry['summary'] = clean_text(summary)
         else:
             entry['summary'] = None
+
+    else:
+
+        entry['full_content'] = None
+        if summary is not None and len(clean_text(summary)) != 0:
+            entry['summary'] = clean_text(summary)
+            entry['short_content'] = truncate(entry['summary'],
+                marker=TRUNCATE_MARKER)
+        else:
+            entry['summary'] = None
+            entry['short_content'] = None
 
     # Handle keywords
     keywords = get_opt_key(item, 'keywords')

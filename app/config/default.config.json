@@ -1,0 +1,8 @@
+{
+"timezone": "Europe/London",
+"enterprise": false,
+"download_new": true,
+"download_prefix": "feedly",
+"access_token": "access token",
+"refresh_token": "refresh token",
+}

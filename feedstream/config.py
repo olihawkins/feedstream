@@ -15,7 +15,7 @@ DIR_CONFIG = 'config'
 DIR_TIMESTAMP = 'timestamp'
 DIR_RECIPIENT = 'recipients'
 
-FILE_CONFIG = 'fs.config.json'
+FILE_CONFIG = 'config.json'
 FILE_TIMESTAMP = 'timestamp.txt'
 FILE_RECIPIENT = 'recipients.json'
 

@@ -185,14 +185,14 @@ class TestFetchEntry(unittest.TestCase):
         with self.assertRaises(fetch.ApiError):
             response = fetch.fetch_entry('entry_id')
 
-class TestFetchTagContents(unittest.TestCase):
+class TestFetchTagEntries(unittest.TestCase):
 
     @patch('feedstream.fetch.requests.get')
     @patch('feedstream.fetch.settings.access_token', 'access token')
-    def test_fetch_tag_entry_ids(self, mock_get):
+    def test_fetch_tag_entries(self, mock_get):
 
         """
-        Test that fetch_tag_contents passes the correct urls and headers for
+        Test that fetch_tag_entries passes the correct urls and headers for
         different combinations of arguments, and returns a json object.
 
         """
@@ -213,40 +213,40 @@ class TestFetchTagContents(unittest.TestCase):
 
         # Test with just a tag id
         mock_get.return_value.text = '[{{"url": "{0}"}}]'.format(url_tag)
-        response = fetch.fetch_tag_contents(tag_id)
+        response = fetch.fetch_tag_entries(tag_id)
         self.assertEqual(response[0]['url'], url_tag)
         mock_get.assert_called_with(url_tag, headers=headers)
 
         # Test with since argument
         mock_get.return_value.text = '[{{"url": "{0}"}}]'.format(url_sin)
-        response = fetch.fetch_tag_contents(tag_id, since=1)
+        response = fetch.fetch_tag_entries(tag_id, since=1)
         self.assertEqual(response[0]['url'], url_sin)
         mock_get.assert_called_with(url_sin, headers=headers)
 
         # Test with continuation argument
         mock_get.return_value.text = '[{{"url": "{0}"}}]'.format(url_con)
-        response = fetch.fetch_tag_contents(tag_id, continuation=2)
+        response = fetch.fetch_tag_entries(tag_id, continuation=2)
         self.assertEqual(response[0]['url'], url_con)
         mock_get.assert_called_with(url_con, headers=headers)
 
         # Test with count argument
         mock_get.return_value.text = '[{{"url": "{0}"}}]'.format(url_cou)
-        response = fetch.fetch_tag_contents(tag_id, count=3)
+        response = fetch.fetch_tag_entries(tag_id, count=3)
         self.assertEqual(response[0]['url'], url_cou)
         mock_get.assert_called_with(url_cou, headers=headers)
 
         # Test with all arguments
         mock_get.return_value.text = '[{{"url": "{0}"}}]'.format(url_all)
-        response = fetch.fetch_tag_contents(tag_id,
+        response = fetch.fetch_tag_entries(tag_id,
             since=1, continuation=2, count=3)
         self.assertEqual(response[0]['url'], url_all)
         mock_get.assert_called_with(url_all, headers=headers)
 
     @patch('feedstream.fetch.requests.get')
-    def test_fetch_tag_contents_api_error(self, mock_get):
+    def test_fetch_tag_entries_api_error(self, mock_get):
 
         """
-        Test that fetch_tag_contents raises an ApiError when the response
+        Test that fetch_tag_entries raises an ApiError when the response
         status is not ok.
 
         """
@@ -257,4 +257,4 @@ class TestFetchTagContents(unittest.TestCase):
             'errorMessage': 'API handler not found'})
 
         with self.assertRaises(fetch.ApiError):
-            response = fetch.fetch_tag_contents('tag_id')
+            response = fetch.fetch_tag_entries('tag_id')
