@@ -47,7 +47,7 @@ FIELDNAMES = [
     'highlights',
     'article_id']
 
-# Functions -------------------------------------------------------------------
+# Timestamp functions ---------------------------------------------------------
 
 def get_datetime_from_timestamp(ts_ms, tz=TIMEZONE):
 
@@ -89,6 +89,7 @@ def get_timestamp_from_datetime(dt):
     ts_ms = int(ts_secs * 1000)
     return ts_ms
 
+# Data processing functions ---------------------------------------------------
 
 def key_exists(data_dict, *keys):
 
@@ -120,26 +121,6 @@ def get_opt_key(data_dict, *keys):
         except KeyError:
             return None
     return element
-
-
-def get_entry_url(entry):
-
-    """Return the best available url for the entry or None if missing."""
-
-    if key_exists(entry, 'canonicalUrl'):
-        return entry['canonicalUrl']
-
-    if key_exists(entry, 'canonical'):
-        for c in entry['canonical']:
-            if key_exists(c, 'href'):
-                return c['href']
-
-    if key_exists(entry, 'alternate'):
-        for a in entry['alternate']:
-            if key_exists(a, 'href'):
-                return a['href']
-
-    return None
 
 
 def clean_text(text):
@@ -179,7 +160,7 @@ def clean_text(text):
     return text.strip()
 
 
-def truncate(text, length=TRUNCATE_LENGTH, marker=None):
+def truncate(text, length, marker=None):
 
     """
     Truncate the text to the given length, rounded to the last full word.
@@ -195,94 +176,143 @@ def truncate(text, length=TRUNCATE_LENGTH, marker=None):
             text = '{0} {1}'.format(text, marker)
     return text
 
+# Data parsing functions ------------------------------------------------------
 
-def parse_entry(tag_id, tag_label, item):
+def parse_title(item):
 
-    """
-    Parse an entry item returned from the API, simplify and clean the data,
-    and return it as a flat dictionary.
+    """Get the title for the item or None if missing."""
 
-    """
+    title = get_opt_key(item, 'title')
+    if title is not None:
+        title = clean_text(title)
+    return title
 
-    entry = {}
-    entry['tag_id'] = tag_id
-    entry['tag_label'] = clean_text(tag_label)
-    entry['article_id'] = item['id']
-    entry['url'] = get_entry_url(item)
+def parse_author(item):
 
-    # Handle title
-    entry['title'] = get_opt_key(item, 'title')
-    if entry['title'] is not None:
-        entry['title'] = clean_text(entry['title'])
+    """Get the author for the item or None if missing."""
 
-    # Handle author
-    entry['author'] = get_opt_key(item, 'author')
-    if entry['author'] is not None:
-        entry['author'] = clean_text(entry['author'])
+    author = get_opt_key(item, 'author')
+    if author is not None:
+        author = clean_text(author)
+    return author
 
-    # Handle publisher
-    entry['publisher'] = get_opt_key(item, 'origin', 'title')
-    if entry['publisher'] is not None:
-        entry['publisher'] = clean_text(entry['publisher'])
+def parse_publisher(item):
 
-    # Handle add date
-    add_date = get_opt_key(item, 'actionTimestamp')
+    """Get the publisher for the item or None if missing."""
 
-    if add_date is not None:
-        entry['add_timestamp'] = item['actionTimestamp']
-        entry['add_date'] = get_date_from_timestamp(add_date)
-        entry['add_time'] = get_time_from_timestamp(
-            add_date).strftime('%H:%M:%S')
-    else:
-        entry['add_timestamp'] = None
-        entry['add_date'] = None
-        entry['add_time'] = None
+    publisher = get_opt_key(item, 'origin', 'title')
+    if publisher is not None:
+        publisher = clean_text(publisher)
+    return publisher
 
-    # Handle pub date
+def parse_url(item):
+
+    """Get the best available url for the item or None if missing."""
+
+    if key_exists(item, 'canonicalUrl'):
+        return item['canonicalUrl']
+
+    if key_exists(item, 'canonical'):
+        for c in item['canonical']:
+            if key_exists(c, 'href'):
+                return c['href']
+
+    if key_exists(item, 'alternate'):
+        for a in item['alternate']:
+            if key_exists(a, 'href'):
+                return a['href']
+
+    return None
+
+def parse_pub_date(item):
+
+    """Get the publication date or None if missing."""
+
     pub_date = get_opt_key(item, 'published')
-
     if pub_date is not None:
-        entry['pub_date'] = get_date_from_timestamp(pub_date)
-    else:
-        entry['pub_date'] = None
+        pub_date = get_date_from_timestamp(pub_date)
+    return pub_date
 
-    # Handle content fields
+def parse_add_timestamp(item):
+
+    """Get date and time data for the added timestamp or None if missing."""
+
+    ats = get_opt_key(item, 'actionTimestamp')
+    add_timestamp = None
+    add_date = None
+    add_time = None
+
+    if ats is not None:
+        add_timestamp = ats
+        add_date = get_date_from_timestamp(ats)
+        add_time = get_time_from_timestamp(ats).strftime('%H:%M:%S')
+
+    return (add_timestamp, add_date, add_time)
+
+def parse_content_fields(item):
+
+    """
+    Gets the full content and summary, and creates the short content based
+    on which of these is present. The function aims to use a truncated version
+    of the full content for the short content. If the full content is not
+    present, it will then try to use a truncated version of the summary. If
+    neither the full content nor the summary is present, all returned values
+    are None.
+
+    """
+
+    short_content = None
     full_content = get_opt_key(item, 'fullContent')
     summary = get_opt_key(item, 'summary', 'content')
 
     if full_content is not None and len(clean_text(full_content)) != 0:
 
-        entry['full_content'] = clean_text(full_content)
-        entry['short_content'] = truncate(entry['full_content'],
-            marker=TRUNCATE_MARKER)
+        full_content = clean_text(full_content)
+        short_content = truncate(full_content,
+            TRUNCATE_LENGTH, marker=TRUNCATE_MARKER)
+
         if summary is not None and len(clean_text(summary)) != 0:
-            entry['summary'] = clean_text(summary)
+            summary = clean_text(summary)
         else:
-            entry['summary'] = None
+            summary = None
 
     else:
 
-        entry['full_content'] = None
+        full_content = None
         if summary is not None and len(clean_text(summary)) != 0:
-            entry['summary'] = clean_text(summary)
-            entry['short_content'] = truncate(entry['summary'],
-                marker=TRUNCATE_MARKER)
+            summary = clean_text(summary)
+            short_content = truncate(summary,
+                TRUNCATE_LENGTH, marker=TRUNCATE_MARKER)
         else:
-            entry['summary'] = None
-            entry['short_content'] = None
+            summary = None
+            short_content = None
 
-    # Handle keywords
+    return (short_content, full_content, summary)
+
+def parse_keywords(item):
+
+    """Get the keywords or None if missing."""
+
     keywords = get_opt_key(item, 'keywords')
+
     if keywords is not None:
         words = []
         for keyword in keywords:
             words.append(clean_text(keyword))
-        entry['keywords'] = SEPARATOR.join(words)
-    else:
-        entry['keywords'] = None
 
-    # Handle annotations, which are comments and highlights
+    return keywords
+
+def parse_annotations(item):
+
+    """
+    Get comments and higlights from the annotations field or return None if
+    they are missing.
+
+    """
+
     annotations = get_opt_key(item, 'annotations')
+    comments = None
+    highlights = None
 
     if annotations is not None:
 
@@ -299,18 +329,58 @@ def parse_entry(tag_id, tag_label, item):
             if highlight is not None and 'text' in highlight:
                 highlights.append(clean_text(highlight['text']))
 
-        if len(comments) > 0:
-            entry['comments'] = SEPARATOR.join(comments)
-        else:
-            entry['comments'] = None
+        if len(comments) == 0:
+            comments = None
 
-        if len(highlights) > 0:
-            entry['highlights'] = SEPARATOR.join(highlights)
-        else:
-            entry['highlights'] = None
+        if len(highlights) == 0:
+            highlights = None
 
-    else:
-        entry['comments'] = None
-        entry['highlights'] = None
+    return (comments, highlights)
+
+def parse_item(tag_id, tag_label, item, flatten=False):
+
+    """
+    Parse an entry item returned from the API, simplify and clean the data,
+    and return it as a flat dictionary.
+
+    """
+
+    entry = {}
+    entry['tag_id'] = tag_id
+    entry['tag_label'] = clean_text(tag_label)
+    entry['article_id'] = item['id']
+    entry['title'] = parse_title(item)
+    entry['author'] = parse_author(item)
+    entry['publisher'] = parse_publisher(item)
+    entry['url'] = parse_url(item)
+    entry['pub_date'] = parse_pub_date(item)
+
+    # Handle added timestamp fields
+    ats_fields = parse_add_timestamp(item)
+    entry['add_timestamp'] = ats_fields[0]
+    entry['add_date'] = ats_fields[1]
+    entry['add_time'] = ats_fields[2]
+
+    # Handle content fields
+    content_fields = parse_content_fields(item)
+    entry['short_content'] = content_fields[0]
+    entry['full_content'] = content_fields[1]
+    entry['summary'] = content_fields[2]
+
+    # Handle keywords
+    entry['keywords'] = parse_keywords(item)
+    if flatten and entry['keywords'] is not None:
+        entry['keywords'] = SEPARATOR.join(entry['keywords'])
+
+    # Handle annotations
+    annotations = parse_annotations(item)
+    entry['comments'] = annotations[0]
+    entry['highlights'] = annotations[1]
+
+    if flatten and entry['comments'] is not None:
+        entry['comments'] = SEPARATOR.join(entry['comments'])
+
+    if flatten and entry['highlights'] is not None:
+        entry['highlights'] = SEPARATOR.join(entry['highlights'])
 
     return entry

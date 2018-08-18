@@ -6,6 +6,7 @@ import datetime
 import pytz
 import unittest
 import feedstream.data as data
+from unittest.mock import patch
 
 # Date and time data ----------------------------------------------------------
 
@@ -40,7 +41,8 @@ def get_mock_entry():
         'origin': {'title': 'Publisher'},
         'actionTimestamp': 1530631149285,
         'published': 1530631149285,
-        'summary': {'content': '<p>Lorem ipsum.</p> <p>Doler <b>sit</b> amet'},
+        'summary': {'content': '<p>Some sample text</p>'},
+        'fullContent': '<p>Lorem ipsum doler <b>sit</b> amet, consectetur<p>',
         'keywords': ['some', 'keywords'],
         'annotations': [
             {'comment': 'comment one'},
@@ -51,7 +53,7 @@ def get_mock_entry():
 
     return mock_entry
 
-# Tests -----------------------------------------------------------------------
+# Test timestamp functions ----------------------------------------------------
 
 class TestGetDatetimeFromTimestamp(unittest.TestCase):
 
@@ -172,6 +174,45 @@ class TestGetTimestampFromDatetime(unittest.TestCase):
             ts = data.get_timestamp_from_datetime(dt)
             self.assertEqual(ts, timestamps[i])
 
+# Test data processing functions ----------------------------------------------
+
+class TestKeyFunctions(unittest.TestCase):
+
+    """Test that key_exists and get_opt_key find keys in nested dicts."""
+
+    def setUp(self):
+
+        self.nd = {
+            'a': {'aa': 1, 'ab': 2},
+            'b': {'ba': 'one', 'bb': 'two', 'bc': {'bca': 'three'}},
+            'c': True}
+
+    def test_key_exists(self):
+
+        self.assertTrue(data.key_exists(self.nd, 'a'))
+        self.assertTrue(data.key_exists(self.nd, 'a', 'aa'))
+        self.assertTrue(data.key_exists(self.nd, 'a', 'ab'))
+        self.assertTrue(data.key_exists(self.nd, 'b'))
+        self.assertTrue(data.key_exists(self.nd, 'b', 'ba'))
+        self.assertTrue(data.key_exists(self.nd, 'b', 'bb'))
+        self.assertTrue(data.key_exists(self.nd, 'b', 'bc'))
+        self.assertTrue(data.key_exists(self.nd, 'b', 'bc', 'bca'))
+        self.assertTrue(data.key_exists(self.nd, 'c'))
+        self.assertFalse(data.key_exists(self.nd, 'd'))
+        self.assertFalse(data.key_exists(self.nd, 'd', 'da'))
+
+    def test_get_opt_key(self):
+
+        self.assertEqual(data.get_opt_key(self.nd, 'a'), {'aa': 1, 'ab': 2})
+        self.assertEqual(data.get_opt_key(self.nd, 'a', 'aa'), 1)
+        self.assertEqual(data.get_opt_key(self.nd, 'a', 'ab'), 2)
+        self.assertEqual(data.get_opt_key(self.nd, 'b', 'ba'), 'one')
+        self.assertEqual(data.get_opt_key(self.nd, 'b', 'bb'), 'two')
+        self.assertEqual(data.get_opt_key(self.nd, 'b', 'bc', 'bca'), 'three')
+        self.assertEqual(data.get_opt_key(self.nd, 'c'), True)
+        self.assertEqual(data.get_opt_key(self.nd, 'd'), None)
+        self.assertEqual(data.get_opt_key(self.nd, 'd', 'da'), None)
+
 
 class TestCleanText(unittest.TestCase):
 
@@ -272,94 +313,392 @@ class TestTruncate(unittest.TestCase):
             'An example paragraph of ')
         self.assertEqual(data.truncate(input, length=29, marker=m), input)
 
+# Test data parsing functions ------------------------------------------------------
 
-class TestKeyFunctions(unittest.TestCase):
+class TestParseTitle(unittest.TestCase):
 
-    """Test that key_exists and get_opt_key find keys in nested dicts."""
+    """Test that parse_title returns the expected title."""
 
-    def setUp(self):
+    def test_parse_title(self):
 
-        self.nd = {
-            'a': {'aa': 1, 'ab': 2},
-            'b': {'ba': 'one', 'bb': 'two', 'bc': {'bca': 'three'}},
-            'c': True}
+        mock_entry = get_mock_entry()
+        expected = 'Title'
+        self.assertEqual(data.parse_title(mock_entry), expected)
 
-    def test_key_exists(self):
+    def test_parse_formatted_title(self):
 
-        self.assertTrue(data.key_exists(self.nd, 'a'))
-        self.assertTrue(data.key_exists(self.nd, 'a', 'aa'))
-        self.assertTrue(data.key_exists(self.nd, 'a', 'ab'))
-        self.assertTrue(data.key_exists(self.nd, 'b'))
-        self.assertTrue(data.key_exists(self.nd, 'b', 'ba'))
-        self.assertTrue(data.key_exists(self.nd, 'b', 'bb'))
-        self.assertTrue(data.key_exists(self.nd, 'b', 'bc'))
-        self.assertTrue(data.key_exists(self.nd, 'b', 'bc', 'bca'))
-        self.assertTrue(data.key_exists(self.nd, 'c'))
-        self.assertFalse(data.key_exists(self.nd, 'd'))
-        self.assertFalse(data.key_exists(self.nd, 'd', 'da'))
+        mock_entry = get_mock_entry()
+        mock_entry['title'] = '<h1><i>Title</i></h1>'
+        expected = 'Title'
+        self.assertEqual(data.parse_title(mock_entry), expected)
 
-    def test_get_opt_key(self):
+    def test_parse_missing_title(self):
 
-        self.assertEqual(data.get_opt_key(self.nd, 'a'), {'aa': 1, 'ab': 2})
-        self.assertEqual(data.get_opt_key(self.nd, 'a', 'aa'), 1)
-        self.assertEqual(data.get_opt_key(self.nd, 'a', 'ab'), 2)
-        self.assertEqual(data.get_opt_key(self.nd, 'b', 'ba'), 'one')
-        self.assertEqual(data.get_opt_key(self.nd, 'b', 'bb'), 'two')
-        self.assertEqual(data.get_opt_key(self.nd, 'b', 'bc', 'bca'), 'three')
-        self.assertEqual(data.get_opt_key(self.nd, 'c'), True)
-        self.assertEqual(data.get_opt_key(self.nd, 'd'), None)
-        self.assertEqual(data.get_opt_key(self.nd, 'd', 'da'), None)
+        mock_entry = get_mock_entry()
+        del(mock_entry['title'])
+        expected = None
+        self.assertEqual(data.parse_title(mock_entry), expected)
 
 
-class TestGetEntryUrl(unittest.TestCase):
+class TestParseAuthor(unittest.TestCase):
+
+    """Test that parse_author returns the expected author."""
+
+    def test_parse_author(self):
+
+        mock_entry = get_mock_entry()
+        expected = 'Author'
+        self.assertEqual(data.parse_author(mock_entry), expected)
+
+    def test_parse_formatted_author(self):
+
+        mock_entry = get_mock_entry()
+        mock_entry['author'] = '<p><b>Author</b></p>'
+        expected = 'Author'
+        self.assertEqual(data.parse_author(mock_entry), expected)
+
+    def test_parse_missing_author(self):
+
+        mock_entry = get_mock_entry()
+        del(mock_entry['author'])
+        expected = None
+        self.assertEqual(data.parse_author(mock_entry), expected)
+
+
+class TestParsePublisher(unittest.TestCase):
+
+    """Test that parse_publisher returns the expected publisher."""
+
+    def test_parse_publisher(self):
+
+        mock_entry = get_mock_entry()
+        expected = 'Publisher'
+        self.assertEqual(data.parse_publisher(mock_entry), expected)
+
+    def test_parse_formatted_publisher(self):
+
+        mock_entry = get_mock_entry()
+        mock_entry['origin']['title'] = '<div>Publisher</div>'
+        expected = 'Publisher'
+        self.assertEqual(data.parse_publisher(mock_entry), expected)
+
+    def test_parse_missing_publisher(self):
+
+        mock_entry = get_mock_entry()
+        del(mock_entry['origin'])
+        expected = None
+        self.assertEqual(data.parse_publisher(mock_entry), expected)
+
+
+class TestParseUrl(unittest.TestCase):
 
     """
-    Test that get_entry_url finds the best canonical url for an entry. This
-    test incrementally removes the best candidate urls in a mock entry and
-    checks that the function finds the next best candidate url after each
-    removal.
+    Test that parse_url finds the best canonical url for an entry. This test
+    incrementally removes the best candidate urls in a mock entry and checks
+    that the function finds the next best candidate url after each removal.
 
     """
 
-    def test_get_entry_url(self):
+    def test_parse_url(self):
 
         mock_entry = get_mock_entry()
 
         expected = mock_entry['canonicalUrl']
-        self.assertEqual(data.get_entry_url(mock_entry), expected)
+        self.assertEqual(data.parse_url(mock_entry), expected)
 
         del mock_entry['canonicalUrl']
         expected = mock_entry['canonical'][0]['href']
-        self.assertEqual(data.get_entry_url(mock_entry), expected)
+        self.assertEqual(data.parse_url(mock_entry), expected)
 
         del mock_entry['canonical']
         expected = mock_entry['alternate'][0]['href']
-        self.assertEqual(data.get_entry_url(mock_entry), expected)
+        self.assertEqual(data.parse_url(mock_entry), expected)
 
         del mock_entry['alternate'][0]['href']
         expected = None
-        self.assertEqual(data.get_entry_url(mock_entry), expected)
+        self.assertEqual(data.parse_url(mock_entry), expected)
 
 
-class TestParseEntry(unittest.TestCase):
+class TestParsePubDate(unittest.TestCase):
 
-    """Test that parse_entry returns the expected json."""
+    """Test that parse_pub_date returns the expected date."""
 
-    def test_parse_entry(self):
+    def test_parse_pub_date(self):
 
         mock_entry = get_mock_entry()
-        test_entry = data.parse_entry('id', 'lab', mock_entry)
+        expected = datetime.date(2018, 7, 3)
+        self.assertEqual(data.parse_pub_date(mock_entry), expected)
+
+    def test_parse_missing_pubdate(self):
+
+        mock_entry = get_mock_entry()
+        del(mock_entry['published'])
+        expected = None
+        self.assertEqual(data.parse_pub_date(mock_entry), expected)
+
+
+class TestParseAddTimestamp(unittest.TestCase):
+
+    """Test that parse_add_timestamp returns the expected dates and times."""
+
+    def test_parse_add_timestamp(self):
+
+        expected_add_timestamp = 1530631149285
+        expected_add_date = datetime.date(2018, 7, 3)
+        expected_add_time = '16:19:09'
+
+        ats_fields = data.parse_add_timestamp(get_mock_entry())
+        add_timestamp = ats_fields[0]
+        add_date = ats_fields[1]
+        add_time = ats_fields[2]
+
+        self.assertEqual(add_timestamp, expected_add_timestamp)
+        self.assertEqual(add_date, expected_add_date)
+        self.assertEqual(add_time, expected_add_time)
+
+    def test_parse_missing_add_timestamp(self):
+
+        expected_add_timestamp = None
+        expected_add_date = None
+        expected_add_time = None
+
+        mock_entry = get_mock_entry()
+        del(mock_entry['actionTimestamp'])
+        ats_fields = data.parse_add_timestamp(mock_entry)
+        add_timestamp = ats_fields[0]
+        add_date = ats_fields[1]
+        add_time = ats_fields[2]
+
+        self.assertEqual(add_timestamp, expected_add_timestamp)
+        self.assertEqual(add_date, expected_add_date)
+        self.assertEqual(add_time, expected_add_time)
+
+
+class TestParseContentFields(unittest.TestCase):
+
+    """Test that parse_content_fields returns the expected content fields."""
+
+    @patch('feedstream.data.TRUNCATE_LENGTH', 15)
+    def test_parse_content_fields(self):
+
+        expected_short_content = 'Lorem ipsum {0}'.format(data.TRUNCATE_MARKER)
+        expected_full_content = 'Lorem ipsum doler sit amet, consectetur'
+        expected_summary = 'Some sample text'
+
+        content_fields = data.parse_content_fields(get_mock_entry())
+        short_content = content_fields[0]
+        full_content = content_fields[1]
+        summary = content_fields[2]
+
+        self.assertEqual(short_content, expected_short_content)
+        self.assertEqual(full_content, expected_full_content)
+        self.assertEqual(summary, expected_summary)
+
+    @patch('feedstream.data.TRUNCATE_LENGTH', 15)
+    def test_parse_missing_full_content_field(self):
+
+        expected_short_content = 'Some sample {0}'.format(data.TRUNCATE_MARKER)
+        expected_full_content = None
+        expected_summary = 'Some sample text'
+
+        mock_entry = get_mock_entry()
+        del(mock_entry['fullContent'])
+        content_fields = data.parse_content_fields(mock_entry)
+        short_content = content_fields[0]
+        full_content = content_fields[1]
+        summary = content_fields[2]
+
+        self.assertEqual(short_content, expected_short_content)
+        self.assertEqual(full_content, expected_full_content)
+        self.assertEqual(summary, expected_summary)
+
+    @patch('feedstream.data.TRUNCATE_LENGTH', 15)
+    def test_parse_missing_content_fields(self):
+
+        expected_short_content = None
+        expected_full_content = None
+        expected_summary = None
+
+        mock_entry = get_mock_entry()
+        del(mock_entry['fullContent'])
+        del(mock_entry['summary'])
+        content_fields = data.parse_content_fields(mock_entry)
+        short_content = content_fields[0]
+        full_content = content_fields[1]
+        summary = content_fields[2]
+
+        self.assertEqual(short_content, expected_short_content)
+        self.assertEqual(full_content, expected_full_content)
+        self.assertEqual(summary, expected_summary)
+
+
+class TestParseKeywords(unittest.TestCase):
+
+    """Test that parse_keywords returns the expected keywords."""
+
+    def test_parse_keywords(self):
+
+        mock_entry = get_mock_entry()
+        expected_keywords = mock_entry['keywords']
+        self.assertEqual(data.parse_keywords(mock_entry), expected_keywords)
+
+    def test_parse_missing_keywords(self):
+
+        mock_entry = get_mock_entry()
+        del(mock_entry['keywords'])
+        self.assertEqual(data.parse_keywords(mock_entry), None)
+
+
+class TestParseAnnotations(unittest.TestCase):
+
+    """
+    Test that parse_annotations returns the expected comments and
+    highlights.
+
+    """
+
+    def test_parse_annotations(self):
+
+        mock_entry = get_mock_entry()
+        expected_comments = ['comment one', 'comment two']
+        expected_highlights = ['highlight one', 'highlight two']
+
+        annotations = data.parse_annotations(mock_entry)
+        comments = annotations[0]
+        highlights = annotations[1]
+
+        self.assertEqual(comments, expected_comments)
+        self.assertEqual(highlights, expected_highlights)
+
+    def test_parse_missing_annotations(self):
+
+        mock_entry = get_mock_entry()
+        del(mock_entry['annotations'])
+        expected_comments = None
+        expected_highlights = None
+
+        annotations = data.parse_annotations(mock_entry)
+        comments = annotations[0]
+        highlights = annotations[1]
+
+        self.assertEqual(comments, expected_comments)
+        self.assertEqual(highlights, expected_highlights)
+
+    def test_parse_missing_coments(self):
+
+        mock_entry = get_mock_entry()
+        del(mock_entry['annotations'][0])
+        del(mock_entry['annotations'][0])
+
+        expected_comments = None
+        expected_highlights = ['highlight one', 'highlight two']
+
+        annotations = data.parse_annotations(mock_entry)
+        comments = annotations[0]
+        highlights = annotations[1]
+
+        self.assertEqual(comments, expected_comments)
+        self.assertEqual(highlights, expected_highlights)
+
+    def test_parse_missing_highlights(self):
+
+        mock_entry = get_mock_entry()
+        del(mock_entry['annotations'][3])
+        del(mock_entry['annotations'][2])
+
+        expected_comments = ['comment one', 'comment two']
+        expected_highlights = None
+
+        annotations = data.parse_annotations(mock_entry)
+        comments = annotations[0]
+        highlights = annotations[1]
+
+        self.assertEqual(comments, expected_comments)
+        self.assertEqual(highlights, expected_highlights)
+
+    def test_parse_one_highlight(self):
+
+        mock_entry = get_mock_entry()
+        del(mock_entry['annotations'][3])
+
+        expected_comments = ['comment one', 'comment two']
+        expected_highlights = ['highlight one']
+
+        annotations = data.parse_annotations(mock_entry)
+        comments = annotations[0]
+        highlights = annotations[1]
+
+        self.assertEqual(comments, expected_comments)
+        self.assertEqual(highlights, expected_highlights)
+
+class TestParseItem(unittest.TestCase):
+
+    """Test that parse_item returns the expected json."""
+
+    @patch('feedstream.data.TRUNCATE_LENGTH', 20)
+    def test_parse_item(self):
+
+        mock_entry = get_mock_entry()
+        test_entry = data.parse_item('id', 'lab', mock_entry)
 
         self.assertEqual(
             sorted(list(test_entry.keys())),
             sorted(data.FIELDNAMES))
+
         self.assertEqual(test_entry['tag_id'], 'id')
         self.assertEqual(test_entry['tag_label'], 'lab')
         self.assertEqual(test_entry['article_id'], mock_entry['id'])
         self.assertEqual(test_entry['url'], mock_entry['canonicalUrl'])
         self.assertEqual(test_entry['title'], mock_entry['title'])
         self.assertEqual(test_entry['author'], mock_entry['author'])
-        self.assertEqual(test_entry['summary'], 'Lorem ipsum. Doler sit amet')
+
+        self.assertEqual(test_entry['short_content'],
+            'Lorem ipsum doler {0}'.format(data.TRUNCATE_MARKER))
+        self.assertEqual(test_entry['full_content'],
+            'Lorem ipsum doler sit amet, consectetur')
+        self.assertEqual(test_entry['summary'], 'Some sample text')
+
+        self.assertEqual(test_entry['publisher'],
+            mock_entry['origin']['title'])
+
+        self.assertEqual(test_entry['add_timestamp'],
+            mock_entry['actionTimestamp'])
+
+        self.assertEqual(test_entry['keywords'],
+            mock_entry['keywords'])
+
+        self.assertEqual(test_entry['comments'],
+            ['comment one', 'comment two'])
+
+        self.assertEqual(test_entry['highlights'],
+            ['highlight one', 'highlight two'])
+
+        self.assertEqual(test_entry['pub_date'], datetime.date(2018, 7, 3))
+        self.assertEqual(test_entry['add_date'], datetime.date(2018, 7, 3))
+        self.assertEqual(test_entry['add_time'], '16:19:09')
+
+    @patch('feedstream.data.TRUNCATE_LENGTH', 20)
+    def test_parse_and_flatten_item(self):
+
+        mock_entry = get_mock_entry()
+        test_entry = data.parse_item('id', 'lab', mock_entry, flatten=True)
+
+        self.assertEqual(
+            sorted(list(test_entry.keys())),
+            sorted(data.FIELDNAMES))
+
+        self.assertEqual(test_entry['tag_id'], 'id')
+        self.assertEqual(test_entry['tag_label'], 'lab')
+        self.assertEqual(test_entry['article_id'], mock_entry['id'])
+        self.assertEqual(test_entry['url'], mock_entry['canonicalUrl'])
+        self.assertEqual(test_entry['title'], mock_entry['title'])
+        self.assertEqual(test_entry['author'], mock_entry['author'])
+
+        self.assertEqual(test_entry['short_content'],
+            'Lorem ipsum doler {0}'.format(data.TRUNCATE_MARKER))
+        self.assertEqual(test_entry['full_content'],
+            'Lorem ipsum doler sit amet, consectetur')
+        self.assertEqual(test_entry['summary'], 'Some sample text')
 
         self.assertEqual(test_entry['publisher'],
             mock_entry['origin']['title'])

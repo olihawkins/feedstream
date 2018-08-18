@@ -5,7 +5,6 @@
 import datetime
 import json
 import os
-import pandas as pd
 import feedstream.data as data
 import feedstream.download as download
 from feedstream.config import settings
@@ -27,8 +26,8 @@ def get_mail_users():
 
 
 def get_mail_articles():
-    return pd.DataFrame(download.download_entries()['items'])
-
+    timestamp, entries = download.download_entries_df()
+    return entries
 
 def get_users_articles(users, articles):
 

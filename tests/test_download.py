@@ -8,7 +8,6 @@ import os
 import unittest
 import feedstream.data as data
 import feedstream.download as download
-
 from unittest.mock import patch, call
 from tests.test_data import get_mock_entry
 
@@ -89,9 +88,9 @@ class TestDownloadEntries(unittest.TestCase):
         entries = download.download_entries()
 
         # Check downloaded is an integer timestamp that parses as a datetime
-        self.assertIsInstance(entries['downloaded'], int)
+        self.assertIsInstance(entries['timestamp'], int)
         self.assertIsInstance(datetime.datetime.fromtimestamp(
-            int(entries['downloaded'] / 1000)), datetime.datetime)
+            int(entries['timestamp'] / 1000)), datetime.datetime)
 
         # Check fieldnames are as expected
         fieldnames = data.FIELDNAMES

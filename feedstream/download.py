@@ -5,6 +5,7 @@
 import csv
 import datetime
 import os
+import pandas
 import pathlib
 import feedstream.fetch as fetch
 import feedstream.data as data
@@ -16,9 +17,9 @@ TIMESTAMP_FILE = os.path.join(settings.timestamp_file)
 
 # Download functions ----------------------------------------------------------
 
-def download_entries():
+def download_entries(flatten=False):
 
-    """Download entries from each tag to a csv."""
+    """Download entries for each tag and return a dict of the parsed items."""
 
     items = []
     since = get_last_downloaded() if settings.download_new else None
@@ -36,7 +37,8 @@ def download_entries():
 
             for item in contents['items']:
 
-                item = data.parse_entry(tag_id['id'], tag_id['label'], item)
+                item = data.parse_item(tag_id['id'],
+                    tag_id['label'], item, flatten)
                 items.append(item)
 
             continuation = data.get_opt_key(contents, 'continuation')
@@ -44,19 +46,33 @@ def download_entries():
                 break
 
     entries = {
-        'downloaded': downloaded,
+        'timestamp': downloaded,
         'fieldnames': data.FIELDNAMES,
         'items': items}
 
     return entries
 
-# Save data functions ---------------------------------------------------------
+def download_entries_df():
 
-def write_entries_csv(entries):
+    """
+    Download entries for each tag and return a dataframe of the items. Nested
+    fields are flattened into a single field with items separated using the
+    separator string defined in the data module. The function returns a tuple
+    containing the timestamp of the download and the dataframe itself.
 
-    """Write entries to a csv."""
+    """
 
-    downloaded = entries['downloaded']
+    entries = download_entries(flatten=True)
+    timestamp = entries['timestamp']
+    df = pandas.DataFrame(entries['items'])
+    return (timestamp, df)
+
+def download_entries_csv():
+
+    """Download entries to a csv"""
+
+    entries = download_entries(flatten=True)
+    downloaded = entries['timestamp']
     fieldnames = entries['fieldnames']
     items = entries['items']
 
