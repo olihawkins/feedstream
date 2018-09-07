@@ -24,7 +24,7 @@ RE_WHITESPACE_PUNCTUATION = re.compile(r'\s([?,;:.)}\]"](?:\s|$))')
 RE_WHITESPACE_EXCLAMATION = re.compile(r'\s(!+(?:\s|$))')
 RE_END_CONTINUE = re.compile(' Continue reading\.\.\.\s*$')
 RE_END_DOTS = re.compile('\.\.\.\s*$')
-TRUNCATE_LENGTH = 500
+TRUNCATE_LENGTH = 300
 TRUNCATE_MARKER = '...'
 TIMEZONE = pytz.timezone(settings.timezone)
 SEPARATOR = '<sep>'
@@ -187,6 +187,7 @@ def parse_title(item):
         title = clean_text(title)
     return title
 
+
 def parse_author(item):
 
     """Get the author for the item or None if missing."""
@@ -196,6 +197,7 @@ def parse_author(item):
         author = clean_text(author)
     return author
 
+
 def parse_publisher(item):
 
     """Get the publisher for the item or None if missing."""
@@ -204,6 +206,7 @@ def parse_publisher(item):
     if publisher is not None:
         publisher = clean_text(publisher)
     return publisher
+
 
 def parse_url(item):
 
@@ -224,6 +227,7 @@ def parse_url(item):
 
     return None
 
+
 def parse_pub_date(item):
 
     """Get the publication date or None if missing."""
@@ -232,6 +236,7 @@ def parse_pub_date(item):
     if pub_date is not None:
         pub_date = get_date_from_timestamp(pub_date)
     return pub_date
+
 
 def parse_add_timestamp(item):
 
@@ -248,6 +253,7 @@ def parse_add_timestamp(item):
         add_time = get_time_from_timestamp(ats).strftime('%H:%M:%S')
 
     return (add_timestamp, add_date, add_time)
+
 
 def parse_content_fields(item):
 
@@ -289,6 +295,7 @@ def parse_content_fields(item):
 
     return (short_content, full_content, summary)
 
+
 def parse_keywords(item):
 
     """Get the keywords or None if missing."""
@@ -301,6 +308,7 @@ def parse_keywords(item):
             words.append(clean_text(keyword))
 
     return keywords
+
 
 def parse_annotations(item):
 
@@ -336,6 +344,7 @@ def parse_annotations(item):
             highlights = None
 
     return (comments, highlights)
+
 
 def parse_item(tag_id, tag_label, item, flatten=False):
 

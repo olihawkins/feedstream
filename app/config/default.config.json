@@ -5,4 +5,5 @@
 "download_prefix": "feedly",
 "access_token": "access token",
 "refresh_token": "refresh token",
+"mailer_endpoint": "mailer endpoint"
 }

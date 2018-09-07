@@ -4,6 +4,7 @@
 
 import json
 import unittest
+import feedstream.exceptions as exceptions
 import feedstream.fetch as fetch
 from unittest.mock import patch
 
@@ -67,7 +68,7 @@ class TestFetchTagIds(unittest.TestCase):
             '{"errorCode":404,"errorId":"ap3int-sv2.2018070302.2773846",',
             '"errorMessage":"API handler not found"}')
 
-        with self.assertRaises(fetch.ApiError):
+        with self.assertRaises(exceptions.ApiError):
             response = fetch.fetch_tag_ids()
 
 
@@ -142,7 +143,7 @@ class TestFetchTagEntryIds(unittest.TestCase):
             '{"errorCode":404,"errorId":"ap3int-sv2.2018070302.2773846",',
             '"errorMessage":"API handler not found"}')
 
-        with self.assertRaises(fetch.ApiError):
+        with self.assertRaises(exceptions.ApiError):
             response = fetch.fetch_tag_entry_ids('tag_id')
 
 
@@ -182,7 +183,7 @@ class TestFetchEntry(unittest.TestCase):
             '{"errorCode":404,"errorId":"ap3int-sv2.2018070302.2773846",',
             '"errorMessage":"API handler not found"}')
 
-        with self.assertRaises(fetch.ApiError):
+        with self.assertRaises(exceptions.ApiError):
             response = fetch.fetch_entry('entry_id')
 
 class TestFetchTagEntries(unittest.TestCase):
@@ -256,5 +257,5 @@ class TestFetchTagEntries(unittest.TestCase):
             'errorCode': 404, 'errorId': 'ap3int-sv2.2018070302.2773846',
             'errorMessage': 'API handler not found'})
 
-        with self.assertRaises(fetch.ApiError):
+        with self.assertRaises(exceptions.ApiError):
             response = fetch.fetch_tag_entries('tag_id')

@@ -1,38 +1,35 @@
+<!DOCTYPE html>
 <html>
     <head>
         <style>
-            body {{
+            #body {{
+                margin: 0;
+                padding: 0;
                 font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
                 font-size: 11pt;
             }}
-            h2 {{
+            #body h2 {{
                 font-size: 16pt;
             }}
-            h3 {{
+            #body h3 {{
                 font-size: 15pt;
             }}
-            h4 {{
+            #body h4 {{
                 font-size: 13pt;
             }}
-            a:link,
-            a:visited {{
+            #body a {{
                 color: #046a38;
                 text-decoration: none;
                 font-weight: bold;
             }}
-            a:hover,
-            a:active {{
-                color: #046a38;
-                text-decoration: underline;
-                font-weight: bold;
-            }}
-
         </style>
     </head>
     <body>
-        <h2>Your current awareness bulletin for {date}</h2>
-        {tags}
-        <p>Best wishes,</p>
-        <p>House of Commons Library</p>
+        <div id="body">
+            <h2>Your current awareness bulletin for {date}</h2>
+            {tags}
+            <p>Best wishes,</p>
+            <p>House of Commons Library</p>
+        </div>
     </body>
 </html>

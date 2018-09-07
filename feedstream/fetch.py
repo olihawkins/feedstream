@@ -5,33 +5,10 @@
 import json
 import requests
 import urllib
+import feedstream.exceptions as exceptions
 from feedstream.config import settings
 
-# Exceptions ------------------------------------------------------------------
-
-class Error(Exception):
-
-    """Base class for exceptions in this module."""
-    pass
-
-
-class ApiError(Error):
-
-    """
-    Exception raised for API responses whose status code is not 200.
-
-    Attributes:
-        status_code -- status code of the response
-        api_id -- API error id
-        api_msg -- API error message
-    """
-
-    def __init__(self, status_code, api_id, api_msg):
-        self.status_code = status_code
-        self.api_id = api_id
-        self.api_msg = api_msg
-
-# Personal API ----------------------------------------------------------------
+# Functions -------------------------------------------------------------------
 
 def fetch_tag_ids():
 
@@ -47,7 +24,7 @@ def fetch_tag_ids():
     rjson = json.loads(response.text)
 
     if response.ok is not True:
-        raise ApiError(
+        raise exceptions.ApiError(
             response.status_code,
             rjson['errorId'],
             rjson['errorMessage'])
@@ -83,7 +60,7 @@ def fetch_tag_entry_ids(tag_id, since=None, continuation=None, count=None):
     rjson = json.loads(response.text)
 
     if response.ok is not True:
-        raise ApiError(
+        raise exceptions.ApiError(
             response.status_code,
             rjson['errorId'],
             rjson['errorMessage'])
@@ -103,7 +80,7 @@ def fetch_entry(entry_id):
     rjson = json.loads(response.text)
 
     if response.ok is not True:
-        raise ApiError(
+        raise exceptions.ApiError(
             response.status_code,
             rjson['errorId'],
             rjson['errorMessage'])
@@ -139,9 +116,38 @@ def fetch_tag_entries(tag_id, since=None, continuation=None, count=None):
     rjson = json.loads(response.text)
 
     if response.ok is not True:
-        raise ApiError(
+        raise exceptions.ApiError(
             response.status_code,
             rjson['errorId'],
             rjson['errorMessage'])
 
     return rjson
+
+
+def fetch_access_token():
+
+    """
+    Fetches a new access token from the API and saves it to the config file.
+    Note that refreshing access tokens through the API only works with
+    enterprise accounts. Calling this function when settings.enterprise is
+    set to false will raise a FetchError.
+
+    """
+
+    if not settings.enterprise:
+        raise exceptions.AccountTypeError(
+            'fetch_access_token requires an enterprise account')
+
+    token_url = 'https://cloud.feedly.com/v3/auth/token'
+
+    data = {
+        'refresh_token': settings.refresh_token,
+        'client_id': 'feedlydev',
+        'client_secret': 'feedlydev',
+        'grant_type': 'refresh_token'
+    }
+
+    response = requests.post(token_url, data=data)
+    response_data = json.loads(response.text)
+    settings.access_token = response_data['access_token']
+    settings.save()

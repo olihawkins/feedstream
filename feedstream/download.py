@@ -7,8 +7,9 @@ import datetime
 import os
 import pandas
 import pathlib
-import feedstream.fetch as fetch
 import feedstream.data as data
+import feedstream.exceptions as exceptions
+import feedstream.fetch as fetch
 from feedstream.config import settings
 
 # Constants -------------------------------------------------------------------
@@ -19,6 +20,27 @@ TIMESTAMP_FILE = os.path.join(settings.timestamp_file)
 
 def download_entries(flatten=False):
 
+    """
+    Download entries for each tag and return a dict of the parsed items. If the
+    API token is expired at any point, refresh the token and retry.
+
+    """
+
+    try:
+        return _download_entries(flatten)
+    except exceptions.ApiError as e:
+        if e.status_code == 401 and e.api_msg.startswith("token expired") :
+            if settings.enterprise:
+                fetch.fetch_access_token()
+                return _download_entries()
+            else:
+                raise
+        else:
+            raise
+
+
+def _download_entries(flatten):
+
     """Download entries for each tag and return a dict of the parsed items."""
 
     items = []
@@ -26,19 +48,34 @@ def download_entries(flatten=False):
     downloaded = data.get_timestamp_from_datetime(datetime.datetime.now())
     tag_ids = fetch.fetch_tag_ids()
 
-    for tag_id in tag_ids:
+    # Fetch the articles for each tag, including any continuations
+    for tag in tag_ids:
 
         continuation = None
 
         while True:
 
-            contents = fetch.fetch_tag_entries(tag_id['id'],
+            contents = fetch.fetch_tag_entries(tag['id'],
                 since=since, continuation=continuation)
 
             for item in contents['items']:
 
-                item = data.parse_item(tag_id['id'],
-                    tag_id['label'], item, flatten)
+                # Check the tag data looks sane: accessing an enterprise
+                # account with settings.enterprise set to false causes problems
+                if not data.key_exists(tag, 'id') or \
+                    not data.key_exists(tag, 'label'):
+
+                    raise exceptions.UnexpectedDataError(
+                        'missing fields in tag data: are you accessing an '
+                        'enterprise account without declaring it in your '
+                        'config file?')
+
+                item = data.parse_item(
+                    tag['id'],
+                    tag['label'],
+                    item,
+                    flatten)
+
                 items.append(item)
 
             continuation = data.get_opt_key(contents, 'continuation')
@@ -51,6 +88,7 @@ def download_entries(flatten=False):
         'items': items}
 
     return entries
+
 
 def download_entries_df():
 
@@ -66,6 +104,7 @@ def download_entries_df():
     timestamp = entries['timestamp']
     df = pandas.DataFrame(entries['items'])
     return (timestamp, df)
+
 
 def download_entries_csv():
 

@@ -25,6 +25,7 @@ KEY_DOWNLOAD_NEW = 'download_new'
 KEY_DOWNLOAD_PREFIX = 'download_prefix'
 KEY_ACCESS_TOKEN = 'access_token'
 KEY_REFRESH_TOKEN = 'refresh_token'
+KEY_MAILER_ENDPOINT = 'mailer_endpoint'
 
 # Exceptions ------------------------------------------------------------------
 
@@ -46,6 +47,8 @@ class ConfigurationError(Error):
 class Settings:
 
     def __init__(self, app_dir):
+
+        """Inititalise the settings from the config file."""
 
         self.app_dir = app_dir
         self.data_dir = os.path.join(self.app_dir, DIR_DATA)
@@ -103,6 +106,13 @@ class Settings:
                         'No referesh_token key defined in {0}'.format(
                             self.config_file))
 
+            if KEY_MAILER_ENDPOINT in conf and conf[KEY_MAILER_ENDPOINT] != '':
+                self.mailer_endpoint = conf[KEY_MAILER_ENDPOINT]
+            else:
+                raise ConfigurationError(
+                    'No mailer_endpoint key defined in {0}'.format(
+                        self.config_file))
+
         except FileNotFoundError as e:
             raise ConfigurationError(
                 'Could not find the configuration file: {0}'.format(
@@ -112,6 +122,23 @@ class Settings:
             raise ConfigurationError(
                 'Could not parse the configuration file: {0} \n{1}'.format(
                     self.config_file, e.msg))
+
+    def save(self):
+
+        """Save the settings to the config file."""
+
+        conf = {}
+        conf[KEY_TIMEZONE] = self.timezone
+        conf[KEY_ENTERPRISE] = self.enterprise
+        conf[KEY_DOWNLOAD_NEW] = self.download_new
+        conf[KEY_DOWNLOAD_PREFIX] = self.download_prefix
+        conf[KEY_ACCESS_TOKEN] = self.access_token
+        conf[KEY_REFRESH_TOKEN] = self.refresh_token
+        conf[KEY_MAILER_ENDPOINT] = self.mailer_endpoint
+
+        with open(self.config_file, 'w') as f:
+            f.write(json.dumps(conf, indent=0, sort_keys=False))
+
 
 # Inititalise settings --------------------------------------------------------
 

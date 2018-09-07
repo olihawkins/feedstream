@@ -5,6 +5,7 @@
 import datetime
 import json
 import os
+import requests
 import feedstream.data as data
 import feedstream.download as download
 from feedstream.config import settings
@@ -21,15 +22,16 @@ TEMPLATE_ITEM = open(TEMPLATE_PATH_ITEM).read()
 
 # Functions -------------------------------------------------------------------
 
-def get_mail_users():
+def get_users():
     return json.loads(open(settings.recipient_file).read())
 
 
-def get_mail_articles():
+def get_articles():
     timestamp, entries = download.download_entries_df()
     return entries
 
-def get_users_articles(users, articles):
+
+def get_articles_by_user(users, articles):
 
     """
     Create a dictionary containing a dataframe of unique articles for each user
@@ -42,12 +44,26 @@ def get_users_articles(users, articles):
     for user in users:
         user_articles = articles.loc[articles['tag_id'].isin(user['tag_ids'])]
         unique_articles = user_articles.drop_duplicates(['article_id'])
-        users_articles[user['email']] = unique_articles
+        users_articles[user['email_address']] = unique_articles
 
     return users_articles
 
 
-def create_mail_body(articles):
+def get_emails_by_user(users_articles):
+
+    """
+    Create a dictionary containing the content of the email for each user
+    indexed by their email address.
+
+    """
+
+    users_emails = {}
+    for email_address, articles in users_articles.items():
+        users_emails[email_address] = create_email_body(articles)
+    return users_emails
+
+
+def create_email_body(articles):
 
     """
     Create the body of an email which shows all articles by tag based on the
@@ -91,9 +107,44 @@ def create_mail_body(articles):
         date=date,
         tags=''.join(tags))
 
-    with open(os.path.join('_production', 'test.html'), 'w') as test_mail:
-        test_mail.write(mail)
+    # with open(os.path.join('_production', 'test.html'), 'w') as test_mail:
+    #     test_mail.write(mail)
+
+    return mail
 
 
-def show_entries(entries):
-    print(entries[['tag_label','title']].to_string())
+def get_mailshot_data(subject, users_emails):
+
+    """
+    Create the json payload for a mailshot given the email subject and the
+    email body by recipient address.
+
+    """
+
+    recipients = []
+    for email_address, body in users_emails.items():
+        recipients.append({'email': email_address, 'body': body})
+
+    mailshot_data = {'subject': subject, 'recipients': recipients}
+    return json.dumps(mailshot_data)
+
+
+def send_mailshot(mailshot_data):
+
+    """Send a mailshot with the given data."""
+
+    url = settings.mailer_endpoint
+    headers = {'Content-Type': 'application/json'}
+    response = requests.post(url, headers=headers, data=mailshot_data)
+
+
+def run_mailshot(subject):
+
+    """Downloads article data from feedly and mails it to all users."""
+
+    users = get_users()
+    articles = get_articles()
+    users_articles = get_articles_by_user(users, articles)
+    users_emails = get_emails_by_user(users_articles)
+    mailshot_data = get_mailshot_data(subject, users_emails)
+    send_mailshot(mailshot_data)
