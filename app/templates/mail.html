@@ -5,17 +5,23 @@
             #body {{
                 margin: 0;
                 padding: 0;
-                font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+                font-family: "Open Sans", "Helvetica Neue", "Roboto", Helvetica, Arial, sans-serif;
                 font-size: 11pt;
             }}
             #body h2 {{
                 font-size: 16pt;
             }}
             #body h3 {{
+                margin-top: 40px;
+                margin-bottom: 20px;
                 font-size: 15pt;
             }}
             #body h4 {{
                 font-size: 13pt;
+                margin-bottom: 0;
+            }}
+            #body p {{
+                margin-top: 4px;
             }}
             #body a {{
                 color: #046a38;
@@ -28,6 +34,7 @@
         <div id="body">
             <h2>Your current awareness bulletin for {date}</h2>
             {tags}
+            <p>&nbsp;</p>
             <p>Best wishes,</p>
             <p>House of Commons Library</p>
         </div>

@@ -59,11 +59,11 @@ def get_emails_by_user(users_articles):
 
     users_emails = {}
     for email_address, articles in users_articles.items():
-        users_emails[email_address] = create_email_body(articles)
+        users_emails[email_address] = create_email_body(email_address, articles)
     return users_emails
 
 
-def create_email_body(articles):
+def create_email_body(email_address, articles):
 
     """
     Create the body of an email which shows all articles by tag based on the
@@ -107,8 +107,10 @@ def create_email_body(articles):
         date=date,
         tags=''.join(tags))
 
-    # with open(os.path.join('_production', 'test.html'), 'w') as test_mail:
-    #     test_mail.write(mail)
+    with open(os.path.join('_production', 'mail',
+        '{}.html'.format(email_address)), 'w') as test_mail:
+
+        test_mail.write(mail)
 
     return mail
 
