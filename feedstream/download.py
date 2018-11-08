@@ -32,7 +32,7 @@ def download_entries(flatten=False):
         if e.status_code == 401 and e.api_msg.startswith("token expired") :
             if settings.enterprise:
                 fetch.fetch_access_token()
-                return _download_entries()
+                return _download_entries(flatten)
             else:
                 raise
         else:
